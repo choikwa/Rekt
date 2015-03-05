@@ -17,7 +17,6 @@ class Lexer
 {
 public:
   int Process(const Opt &opt);
-  static const unordered_map<int, vector<Lexeme>> grammar;
 };
 
 #endif /* LEXER_HPP_ */

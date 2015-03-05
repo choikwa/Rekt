@@ -8,7 +8,19 @@
 #ifndef DOGE_HPP_
 #define DOGE_HPP_
 
-class Doge
+namespace FAIL
+{
+enum
+{
+  OPT = 10,
+  LEXER = 20,
+  PARSER = 30,
+  OPTIMIZER = 40,
+  CODEGEN = 50,
+};
+}
+
+class Rekt
 {
 public:
 

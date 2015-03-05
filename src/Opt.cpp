@@ -63,7 +63,7 @@ int Opt::Process(int argc, char **argv)
 
   for(int idx = optind; idx < argc; idx++)
   {
-    if (src.empty() && string(argv[idx]).rfind(".cpp") != string::npos)
+    if (src.empty() && string(argv[idx]).rfind(".rek") != string::npos)
     {
       src = argv[idx];
       cout << "src: " << src << endl;
