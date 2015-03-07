@@ -1,0 +1,42 @@
+#Rekt grammar in BNF form
+
+program: (stmt)*               #program is series of statements
+stmt: func    |                #things that a statement can be
+      if      |
+      for     |
+      while   |
+      switch  |
+      overload
+      
+func: type iden args block                #a function
+type: 'int' | 'float' | 'char' | container  #scalar types or containers
+container: '[]' | '()' | '{}'               #list, set, dict
+args: '(' (decl)(',' decl)* ')'             #args are enclosed in parentheses
+decl: type iden
+block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
+stmt: (decl         |
+       decl '=' exp |
+       iden '=' exp) ';'
+
+if: 'if' '(' exp ')' (stmt | block) (else)?
+else: 'else' (if)? block
+
+for: 'for' iterator block
+iterator: '{' type iden '|' (exp)(',' exp)* '}'
+
+while: 'while' '(' exp ')' block
+      
+switch: 'switch' '(' exp ')'
+        '{'
+           (exp ':' (stmt)*) |
+           ('all' ':' (stmt)*) |
+           ('none' ':' (stmt)*)
+        '}'
+
+exp: Number | String | exp binop exp | unop exp
+binop: '+’ | '-’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
+       '<’ | '<=’ | '>’ | '>=’ | '==’ | '~=’ |
+unop:  '-' | '!' | '~'
+anyop: [^0-9]+
+
+overload: type 'overload' '(' type (anyop|(anyop type)+) ')' block)  #overload operator(s)
