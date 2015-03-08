@@ -26,13 +26,15 @@ Opt::Opt()
       {Assembly,     {"Assembly", 0}},
       {Object,       {"Object", 0}},
       {Link,         {"Link", 0}},
+      {Listing,      {"Listing", 0}},
   };
 }
 
 int Opt::Process(int argc, char **argv)
 {
+  cout << "======== Options ========" << endl;
   int c = 0;
-  while ((c = getopt(argc, argv, "ESco:")) != -1)
+  while ((c = getopt(argc, argv, "ESco:l")) != -1)
   {
     switch (c)
     {
@@ -48,6 +50,9 @@ int Opt::Process(int argc, char **argv)
     case 'o':
       opts[Link].on = 1;
       subopts[Link] = optarg;
+      break;
+    case 'l':
+      opts[Listing].on = 1;
       break;
     default:
       break;

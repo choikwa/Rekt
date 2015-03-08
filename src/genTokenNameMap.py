@@ -1,5 +1,5 @@
 
-filein = open("LexemeEnums.hpp", 'r')
+filein = open("Lexemes.txt", 'r')
 fileout = open("LexemeNameMap.hpp", 'w')
 
 lines = filein.readlines()

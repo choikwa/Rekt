@@ -87,7 +87,7 @@ void Parser::printGrammar()
     cout << LexemeEnums::NameMap[it.first] << " : ";
     for (auto lex : it.second)
     {
-      cout << lex.getstr() << " ";
+      cout << lex.getval() << " ";
     }
     cout << endl;
   }

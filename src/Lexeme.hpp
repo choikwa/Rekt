@@ -15,7 +15,7 @@ namespace LexemeEnums
 {
 enum
 {
-#include "LexemeEnums.hpp"
+#include "Lexemes.txt"
 };
 extern std::unordered_map<int, const char*> NameMap;
 }
@@ -24,15 +24,22 @@ using namespace std;
 class Lexeme
 {
 public:
-  Lexeme();
-  Lexeme(int in);
-  Lexeme(const char *in);
-  ~Lexeme(){}
-  string getstr();
-  int val;
-  string ss;
-  bool isInt;
+  Lexeme(){ cout << "Empty lexeme!" << endl; }
+  Lexeme(int id) : id(id) {}
+  Lexeme(int id, long in, int ln) : id(id), val(in), ln(ln) {}
+  Lexeme(int id, double in, int ln) : id(id), dval(in), ln(ln) {}
+  Lexeme(int id, char in, int ln) : id(id), str(1,in), ln(ln) {}
+  Lexeme(int id, const char *in, int ln) : id(id), str(in), ln(ln) {}
+  Lexeme(int id, const string &in, int ln) : id(id), str(in), ln(ln) {}
+  string getval();
+  int id;  // lexeme enum
+  union
+  {
+    long val; // int
+    double dval;  //floating point
+  };
+  string str;
+  int ln;  // line number
 };
 
-string operator<<(const ostream &out, const Lexeme &in);
 #endif /* LEXEME_HPP_ */

@@ -1,7 +1,7 @@
 # author: thinkdoge
 
-CC=g++
-CFLAGS=-Wall -Wextra -g -c -std=c++1y
+CC=clang++
+CFLAGS=-Wall -Wextra -g -c -std=c++0x
 LDFLAGS=
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
@@ -22,11 +22,11 @@ depend: .depend
 	
 include .depend
 
-LexemeNameMap.hpp: LexemeEnums.hpp genTokenNameMap.py
+LexemeNameMap.hpp: Lexemes.txt genTokenNameMap.py
 	python genTokenNameMap.py
 
 clean:
 	rm -f $(LIB) $(OBJS) Rekt
-	touch LexemeEnums.hpp
+	touch Lexemes.txt
 	
 .PHONY: clean

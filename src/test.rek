@@ -1,16 +1,13 @@
 int func(int z, fp x, [] c, () v)
 {
   int a = 0;
-  fp b = 1.0;
+  float b = 1.0;
   str c = 'c' + "dasdf" - "df"  #"casf"  - single line comment
 
-##
-multi-line comment
-##
   d = [1, 2.0, '3', "4", [5,'a'], (6), {7:8}];
   # not sure if float key type is desirable
 
-  e = {1:a, 2.0:b, 'a':c ## embedded ##, {x|'asdf'}:a ##math## };
+  e = {1:a, 2.0:b, 'a':c , {x|'asdf'}:a };
 
   return int( e[ d[5][1] ] )
 }

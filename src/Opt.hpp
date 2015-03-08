@@ -16,7 +16,8 @@ enum Options
   Preprocessor,
   Assembly,
   Object,
-  Link
+  Link,
+  Listing,
 };
 
 struct state

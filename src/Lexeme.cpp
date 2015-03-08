@@ -17,25 +17,16 @@ std::unordered_map<int, const char*> NameMap =
 };
 }
 using namespace std;
-Lexeme::Lexeme()
+using namespace LexemeEnums;
+string Lexeme::getval()
 {
-  cout << "Empty Lexeme!" << endl;
-}
-
-Lexeme::Lexeme(int in)
-: val(in),
-  ss(LexemeEnums::NameMap[in]),
-  isInt(true)
-{
-}
-
-Lexeme::Lexeme(const char *in)
-: ss(in),
-  isInt(false)
-{
-}
-
-string Lexeme::getstr()
-{
-  return ss;
+  switch (id)
+  {
+  case INT:
+    return to_string(val);
+  case FLOAT:
+    return to_string(dval);
+  default:
+    return str;
+  }
 }
