@@ -21,6 +21,7 @@ public:
   void processComments(const string &str, size_t &it, size_t &ln);
   void processStrLit(const string &str, size_t &it, const size_t ln);
   void processNumLit(const string &str, size_t &it, const size_t ln);
+  void processIden(const string &str, size_t &it, const size_t ln);
   deque<Lexeme> lexemes;
   static const char DN = '*';
 

@@ -11,11 +11,12 @@
 
 namespace LexemeEnums
 {
-std::unordered_map<int, const char*> NameMap =
+unordered_map<int, const char*> NameMap =
 {
 #include "LexemeNameMap.hpp"
 };
 }
+
 using namespace std;
 using namespace LexemeEnums;
 string Lexeme::getval()

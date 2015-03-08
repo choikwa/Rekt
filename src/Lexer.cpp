@@ -16,7 +16,6 @@
 #include "Rekt.hpp"
 
 using namespace LexemeEnums;
-
 using namespace std;
 
 
@@ -87,10 +86,11 @@ int Lexer::Process(const Opt &opt)
         else { ADDLEXEME(BINOP, c); it++; break; }
       }
       if (isdigit(c)) { processNumLit(str, it, ln); break; }
-      //else { processIden
+      else if(isalpha(c)) { processIden(str, it, ln); break; }
 
       // unconsumed
-      cout << "Unrecognized Lexeme \'" << c << "\' in l:" << ln << endl;
+      //cout << "Unrecognized Lexeme \'" << c << "\' in l:" << ln << endl;
+      cout << c;
       it++;
       break;
     }
@@ -184,4 +184,16 @@ void Lexer::processNumLit(const string &str, size_t &it, const size_t ln)
     lexemes.push_back(Lexeme(FLOAT, stod(str.substr(start, it - start), NULL), ln));
   else
     lexemes.push_back(Lexeme(INT, stol(str.substr(start, it - start), NULL), ln));
+}
+
+void Lexer::processIden(const string &str, size_t &it, const size_t ln)
+{
+  size_t start = it;
+  it++;
+  while(isalpha(str[it]) || isdigit(str[it]))
+    it++;
+  string word = str.substr(start, it - start);
+  auto search = keywords.find(word);
+  if (search != keywords.end()) { lexemes.push_back(Lexeme(KEYWORD, word, ln)); }
+  else { lexemes.push_back(Lexeme(IDEN, word, ln)); }
 }

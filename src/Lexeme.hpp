@@ -11,13 +11,19 @@
 #include <cassert>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 namespace LexemeEnums
 {
+using namespace std;
 enum
 {
 #include "Lexemes.txt"
 };
-extern std::unordered_map<int, const char*> NameMap;
+const unordered_set<string> keywords =
+{
+#include "Keywords.txt"
+};
+extern unordered_map<int, const char*> NameMap;
 }
 
 using namespace std;
