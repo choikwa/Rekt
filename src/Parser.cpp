@@ -95,6 +95,7 @@ void Parser::printGrammar()
 }
 int Parser::Process(const Lexer &lex)
 {
-
-  return FAIL::PARSER;
+  cout << "======== PARSER ========" << endl;
+  printGrammar();
+  return 0;
 }

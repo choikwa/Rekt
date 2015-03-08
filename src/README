@@ -2,4 +2,8 @@ Rekt Language
 
 Language for the lazy and the elegant.
 
-Lexer done.
+For demonstration,
+
+      make
+      ./Rekt test.rek -o test
+
