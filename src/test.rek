@@ -1,8 +1,9 @@
+int aa = 123;
 int func(int z, fp x, [] c, () v)
 {
   int a = 0;
   float b = 1.0;
-  str c = 'c' + "dasdf" - "df"  #"casf"  - single line comment
+  str c = 'c' + "dasdf" - "df";  #"casf"  - single line comment
 
   d = [1, 2.0, '3', "4", [5,'a'], (6), {7:8}];
   # not sure if float key type is desirable
@@ -42,7 +43,7 @@ float b()
   }
 
   #loops
-  for {x|'asdfa'} #type inferred
+  for {char x|'asdfa'} #type inferred
   {
     print x
   }
@@ -52,7 +53,7 @@ float b()
     
   }
 
-  for {x|x=1,x<10,x++}  # {x|1<=x<10, int} equivalent?
+  for {x|x=1,x<10,x=x+1}  # {x|1<=x<10, int} equivalent?
   {
 
   }

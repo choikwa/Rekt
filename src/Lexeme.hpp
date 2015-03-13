@@ -12,7 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-namespace LexemeEnums
+namespace Lexeme
 {
 using namespace std;
 enum
@@ -23,29 +23,19 @@ const unordered_set<string> keywords =
 {
 #include "Keywords.txt"
 };
-extern unordered_map<int, const char*> NameMap;
-}
-
-using namespace std;
-class Lexeme
+const unordered_set<string> types =
 {
-public:
-  Lexeme(){ cout << "Empty lexeme!" << endl; }
-  Lexeme(int id) : id(id) {}
-  Lexeme(int id, long in, int ln) : id(id), val(in), ln(ln) {}
-  Lexeme(int id, double in, int ln) : id(id), dval(in), ln(ln) {}
-  Lexeme(int id, char in, int ln) : id(id), str(1,in), ln(ln) {}
-  Lexeme(int id, const char *in, int ln) : id(id), str(in), ln(ln) {}
-  Lexeme(int id, const string &in, int ln) : id(id), str(in), ln(ln) {}
-  string getval();
-  int id;  // lexeme enum
-  union
-  {
-    long val; // int
-    double dval;  //floating point
-  };
-  string str;
-  int ln;  // line number
+    "int",
+    "float",
+    "char",
 };
-
+const unordered_map<int, const char*> idToNameMap =
+{
+#include "idToNameMap.txt"
+};
+const unordered_map<string, int> nameToIdMap =
+{
+#include "nameToIdMap.txt"
+};
+}
 #endif /* LEXEME_HPP_ */

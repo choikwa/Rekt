@@ -10,14 +10,15 @@
 #include <vector>
 #include <unordered_map>
 #include <cctype>
-#include "Lexer.hpp"
-#include "Opt.hpp"
-#include "Lexeme.hpp"
 #include "Rekt.hpp"
+#include "Opt.hpp"
+#include "Lexer.hpp"
+#include "Lexeme.hpp"
+#include "Node.h"
 
-using namespace LexemeEnums;
 using namespace std;
-
+using namespace Lexeme;
+using namespace AST;
 
 int Lexer::Process(const Opt &opt)
 {
@@ -51,7 +52,7 @@ int Lexer::Process(const Opt &opt)
 
   size_t it = 0;
   size_t ln = 1;
-#define ADDLEXEME(x,y) cout << DN; lexemes.push_back(Lexeme(x, y, ln))
+#define ADDLEXEME(x,y) cout << DN; lexemes.push_back(new Node(x, y, ln))
   while (str[it] != *str.end())
   {
     char c = str[it];
@@ -100,11 +101,11 @@ int Lexer::Process(const Opt &opt)
 #undef ADDLEXEME
 #endif
 
-  cout << "\n\n====[Enum] [val] [lineno]====" << endl;
-  for (auto &it: lexemes)
-  {
-    cout << '[' << NameMap[it.id] << "] [" << it.getval() << "] [l:" << it.ln << ']' << endl;
-  }
+//  cout << "\n\n====[Enum] [val] [lineno]====" << endl;
+//  for (auto &it: lexemes)
+//  {
+//    cout << '[' << NameMap.at(it.id) << "] [" << it.getval() << "] [l:" << it.ln << ']' << endl;
+//  }
   cout << endl;
   return 0;
 }
@@ -152,7 +153,7 @@ void Lexer::processStrLit(const string &str, size_t &it, const size_t ln)
         str[it-1] != '\\')
       break;
   }
-  lexemes.push_back(Lexeme(STR, str.substr(start, it - start), ln));
+  lexemes.push_back(new Node(STR, str.substr(start, it - start), ln));
   it++;
   cout << DN;
 }
@@ -181,19 +182,24 @@ void Lexer::processNumLit(const string &str, size_t &it, const size_t ln)
     it++;
   }
   if(foundDecPoint)
-    lexemes.push_back(Lexeme(FLOAT, stod(str.substr(start, it - start), NULL), ln));
+    lexemes.push_back(new Node(FLOAT, stod(str.substr(start, it - start), NULL), ln));
   else
-    lexemes.push_back(Lexeme(INT, stol(str.substr(start, it - start), NULL), ln));
+    lexemes.push_back(new Node(INT, stol(str.substr(start, it - start), NULL), ln));
 }
 
 void Lexer::processIden(const string &str, size_t &it, const size_t ln)
 {
   size_t start = it;
   it++;
-  while(isalpha(str[it]) || isdigit(str[it]))
+  while(isalpha(str[it]) || isdigit(str[it]) || str[it] == '_')
     it++;
   string word = str.substr(start, it - start);
   auto search = keywords.find(word);
-  if (search != keywords.end()) { lexemes.push_back(Lexeme(KEYWORD, word, ln)); }
-  else { lexemes.push_back(Lexeme(IDEN, word, ln)); }
+  if (search != keywords.end())
+  {
+    cout << "search=" << *search << endl;
+    lexemes.push_back(new Node(nameToIdMap.at(*search)));
+  }
+  else if ( (search = types.find(word)) != types.end()) { lexemes.push_back(new Node(TYPE, word, ln)); }
+  else { lexemes.push_back(new Node(IDEN, word, ln)); }
 }

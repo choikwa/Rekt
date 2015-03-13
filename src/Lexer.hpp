@@ -12,8 +12,10 @@
 #include <vector>
 #include <deque>
 #include "Lexeme.hpp"
+#include "Node.h"
 class Opt;
 using namespace std;
+using namespace AST;
 class Lexer
 {
 public:
@@ -22,7 +24,7 @@ public:
   void processStrLit(const string &str, size_t &it, const size_t ln);
   void processNumLit(const string &str, size_t &it, const size_t ln);
   void processIden(const string &str, size_t &it, const size_t ln);
-  deque<Lexeme> lexemes;
+  vector<Node*> lexemes;
   static const char DN = '*';
 
 };

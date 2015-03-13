@@ -1,10 +1,11 @@
 # author: thinkdoge
 
-CC=clang++
-CFLAGS=-Wall -Wextra -g -c -std=c++0x
+CC=g++
+CFLAGS=-Wall -Wextra -g -c -std=c++1y
 LDFLAGS=
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
+
 
 all: Rekt
 
@@ -22,11 +23,11 @@ depend: .depend
 	
 include .depend
 
-LexemeNameMap.hpp: Lexemes.txt genTokenNameMap.py
+idToNameMap.txt nameToIdMap.txt: Lexemes.txt genTokenNameMap.py
 	python genTokenNameMap.py
 
 clean:
-	rm -f $(LIB) $(OBJS) Rekt
+	rm -f $(LIB) $(OBJS) .depend idToNameMap.txt nameToIdMap.txt Rekt
 	touch Lexemes.txt
 	
 .PHONY: clean

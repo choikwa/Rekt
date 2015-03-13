@@ -6,7 +6,4 @@
 "none",
 "overload",
 "return",
-"int",
-"float",
-"char",
 "set",

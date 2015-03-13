@@ -1,0 +1,15 @@
+======== Options ========
+Listing 0 
+Link 1 test
+Object 0 
+Assembly 0 
+Preprocessor 0 
+src: test.rek
+======== LEXER ========
+***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+======== PARSER ========
+int func ( int z , fp x , [ ] c , ( ) v ) { int a = 0 ; float b = 1.000000 ; str c = c + dasdf - df d = [ 1 , 2.000000 , 3 , 4 , [ 5 , a ] , ( 6 ) , { 7 : 8 } ] ; e = { 1 : a , 2.000000 : b , a : c , { x | asdf } : a } ; return int ( e [ d [ 5 ] [ 1 ] ] ) } float b ( ) { if ( cond ) { } else { } switch ( int state ) { 1 , 2 , 3 : 2 , 3 : 3 : isReal : isImag : { x | 1 < x < 4 , isReal } : none : all : } switch ( str s ) { { x | asdfa } : break ; } for { char x | asdfa } { print x } for { x | [ 1 , 2.000000 , asdf ] } { } for { x | x = 1 , x < 10 , x + + } { } } 
+========================
+TYPE IDEN BRACKET TYPE IDEN COMMA IDEN IDEN COMMA BRACKET BRACKET IDEN COMMA BRACKET BRACKET IDEN BRACKET BRACKET TYPE IDEN ASSIGN INT SEMICOLON TYPE IDEN ASSIGN FLOAT SEMICOLON IDEN IDEN ASSIGN STR BINOP STR MINUS STR IDEN ASSIGN BRACKET INT COMMA FLOAT COMMA STR COMMA STR COMMA BRACKET INT COMMA STR BRACKET COMMA BRACKET INT BRACKET COMMA BRACKET INT COLON INT BRACKET BRACKET SEMICOLON IDEN ASSIGN BRACKET INT COLON IDEN COMMA FLOAT COLON IDEN COMMA STR COLON IDEN COMMA BRACKET IDEN BINOP STR BRACKET COLON IDEN BRACKET SEMICOLON KEYWORD TYPE BRACKET IDEN BRACKET IDEN BRACKET INT BRACKET BRACKET INT BRACKET BRACKET BRACKET BRACKET TYPE IDEN BRACKET BRACKET BRACKET KEYWORD BRACKET IDEN BRACKET BRACKET BRACKET KEYWORD BRACKET BRACKET KEYWORD BRACKET TYPE IDEN BRACKET BRACKET INT COMMA INT COMMA INT COLON INT COMMA INT COLON INT COLON IDEN COLON IDEN COLON BRACKET IDEN BINOP INT BINOP IDEN BINOP INT COMMA IDEN BRACKET COLON KEYWORD COLON KEYWORD COLON BRACKET KEYWORD BRACKET IDEN IDEN BRACKET BRACKET BRACKET IDEN BINOP STR BRACKET COLON IDEN SEMICOLON BRACKET IDEN BRACKET TYPE IDEN BINOP STR BRACKET BRACKET IDEN IDEN BRACKET IDEN BRACKET IDEN BINOP BRACKET INT COMMA FLOAT COMMA STR BRACKET BRACKET BRACKET BRACKET IDEN BRACKET IDEN BINOP IDEN ASSIGN INT COMMA IDEN BINOP INT COMMA IDEN BINOP BINOP BRACKET BRACKET BRACKET BRACKET 
+=========================
+Success!
