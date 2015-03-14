@@ -196,10 +196,13 @@ void Lexer::processIden(const string &str, size_t &it, const size_t ln)
   string word = str.substr(start, it - start);
   auto search = keywords.find(word);
   if (search != keywords.end())
+    lexemes.push_back(new Node(search->second, search->first, ln));
+  else
   {
-    cout << "search=" << *search << endl;
-    lexemes.push_back(new Node(nameToIdMap.at(*search)));
+    auto id = types.find(word);
+    if (id != types.end())
+      lexemes.push_back(new Node(TYPE, word, ln));
+    else
+      lexemes.push_back(new Node(IDEN, word, ln));
   }
-  else if ( (search = types.find(word)) != types.end()) { lexemes.push_back(new Node(TYPE, word, ln)); }
-  else { lexemes.push_back(new Node(IDEN, word, ln)); }
 }

@@ -49,6 +49,6 @@ int main(int argc, char **argv)
     cout << "with return " << ret << endl;
     return ret;
   }
-  cout << "Success!" << endl;
+  cout << "\nSuccess!" << endl;
   return 0;
 }

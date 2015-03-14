@@ -34,24 +34,47 @@ namespace ParseWS
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
-#define TRACE() if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
-                 cout << __func__ << endl; cout.flush(); }
-#define RET(x) tab-=2; return x
-void expect(Node n)
+#define TRACE() { if(trace) tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
+  cout << __func__ << endl;}
+#define RET(x) { tab-=2; return x; }
+void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
+void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
+  " at ln" << curNode().ln << endl; }
+
+Node *expect(Node n)
 {
-  cout << "!!! Expected " << n << " at ln" << curNode().ln << endl;
+  Node *ret;
+  if((ret = match(n)))
+    return ret;
+  else
+    error(n);
+  return NULL;
 }
-void expect(Node n1, Node n2)
+Node *expect(Node n1, Node n2)
 {
-  cout << "!!! Expected " << n1 << " or " << n2 << " at ln" << curNode().ln << endl;
+  Node *ret;
+  if((ret = match(n1)) || (ret = match(n2)))
+    return ret;
+  else
+    error(n1, n2);
+  return NULL;
+}
+Node *expectLex(int id)
+{
+  Node *ret;
+  if((ret = lexMatch(id)))
+    return ret;
+  else
+    cout << "!!! Expected " << idToNameMap.at(id) << " at ln" << curNode().ln << endl;
+  return NULL;
 }
 Node &curNode() { return *ss->at(idx); }
 Node *getNode()
 {
   if (idx >= ss->size())
   {
-    cout << "end of lexeme stream" << endl;
-    exit(0);
+    //cout << "end of lexeme stream" << endl;
+    return NULL;
   }
   //cout << "ss[" << idx << "]=" << *ss->at(idx) << endl;
   Node *tmp = ss->at(idx);
@@ -60,7 +83,7 @@ Node *getNode()
 Node *lexMatch(int id)
 {
   Node *tmp = getNode();
-  if (tmp->id == id)
+  if (tmp && tmp->id == id)
   {
     idx++;
     return tmp;
@@ -69,8 +92,11 @@ Node *lexMatch(int id)
 }
 Node *match(Node n)
 {
+  if(isKeyword(n.id))
+    return lexMatch(n.id);
+
   Node *tmp = getNode();
-  if (*tmp == n)
+  if (tmp && *tmp == n)
   {
     idx++;
     return tmp;
@@ -87,33 +113,32 @@ Node *program()
 Node *stmt()
 {
   TRACE();
-  if(Node *fn = func())
+  if(Node *n = func())
   {
-    RET(new Node(STMT, 1, fn));
+    RET(new Node(STMT, 1, n));
   }
-  else if (Node *n_if = f_if())
+  else if (Node *n = f_if())
   {
-    RET(new Node(STMT, 1, n_if));
+    RET(new Node(STMT, 1, n));
+  }
+  else if (Node *n = f_for())
+  {
+    RET(new Node(STMT, 1, n));
   }
   RET(NULL);
 }
 Node *func()
 {
   TRACE();
-  // drastic measures to abuse decl in cond...
-  if(Node *type = lexMatch(TYPE))
+  if(Node *n_decl = decl())
   {
-    if(Node *iden = lexMatch(IDEN))
+    if (Node *n_args = args())
     {
-      if (Node *n_args = args())
+      if (Node *n_block = block())
       {
-        if (Node *n_block = block())
-        {
-          Node *fn = new Node(FUNC, 2, n_args, n_block);
-          fn->str = type->str + " " + iden->str;
-          RET(fn);
-        } expect(BLOCK);
-      }
+        Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
+        RET(fn);
+      } error(BLOCK);
     }
   }
   RET(NULL);
@@ -126,18 +151,14 @@ Node *args()
   {
     if (Node *decl1 = decl())
     {
-      cout << "matched decl" << endl;
       children.push_back(decl1);
       Node *comma, *decl2;
       do
       {
-        comma = match(COMMA);
+        comma = lexMatch(COMMA);
         decl2 = decl();
         if (comma && decl2)
-        {
-          children.push_back(comma);
           children.push_back(decl2);
-        }
       } while (comma && decl2);
     }
     if(match(Node(BRACKET, ")")))
@@ -152,10 +173,10 @@ Node *decl()
   TRACE();
   if (Node *type = lexMatch(TYPE))
   {
-    if (Node *iden = lexMatch(IDEN))
+    if (Node *iden = expectLex(IDEN))
     {
       RET(new Node(DECL, 2, type, iden));
-    } expect(DECL);
+    }
   }
   RET(NULL);
 }
@@ -171,7 +192,6 @@ Node *block()
     }
     if(match(Node(BRACKET, "}")))
       RET(new Node(BLOCK, stmts));
-    expect(Node(BRACKET, "}"));
   }
   RET(NULL);
 }
@@ -181,12 +201,12 @@ Node *f_if()
   if(match(IF))
   {
     vector<Node*> chl;
-    if(match(Node(BRACKET, "(")))
+    if(expect(Node(BRACKET, "(")))
     {
       if(Node *e = exp())
       {
         chl.push_back(e);
-        if(match(Node(BRACKET, ")")))
+        if(expect(Node(BRACKET, ")")))
         {
           if(Node *s = stmt())
           {
@@ -195,26 +215,96 @@ Node *f_if()
           else if (Node *b = block())
           {
             chl.push_back(b);
-          } expect(STMT, BLOCK);
+          }
+          else
+            cout << "!!! Expected STMT or BLOCK at ln" << curNode().ln << endl;
 
           if(Node *n_else = f_else())
           {
             chl.push_back(n_else);
           }
           RET(new Node(IF, chl));
-        } expect(Node(BRACKET, ")"));
-      } expect(EXP);
-    } expect(Node(BRACKET, ")"));
+        }
+      }
+    }
   }
   RET(NULL);
 }
 Node *f_else()
 {
-  RET(new Node(ELSE));
+  TRACE();
+  vector<Node *> chl;
+  if(match(ELSE))
+  {
+    if(Node *n_if = f_if()) // else if case
+    {
+      chl.push_back(n_if);
+      RET(new Node(ELSE, chl));
+    }
+    else
+    {
+      if(Node *s = stmt())
+      {
+        chl.push_back(s);
+      }
+      else if (Node *b = block())
+      {
+        chl.push_back(b);
+      }
+      else
+      {
+        cout << "!!! Expected STMT or BLOCK at ln" << curNode().ln << endl;
+        RET(NULL);
+      }
+      RET(new Node(ELSE, chl));
+    }
+  }
+  RET(NULL);
 }
-Node *exp()
+Node *exp() // todo
 {
+  TRACE();
+  idx++;
   RET(new Node(EXP));
+}
+Node *f_for()
+{
+  TRACE();
+  if(match(FOR))
+  {
+    if(expect(Node(BRACKET, "{")))
+    {
+      vector<Node*> chl;
+      if(Node *n_decl = decl())
+      {
+        chl.push_back(n_decl);
+        if(expect(Node(BINOP, "|")))
+        {
+          cout << "got '|'" << endl;
+          Node *cond;
+          if((cond = exp()))
+          {
+            cout << "pushed " << cond << endl;
+            chl.push_back(cond);
+          }
+          else
+            error(EXP);
+          Node *comma;
+          do
+          {
+            comma = lexMatch(COMMA);
+            cond = exp();
+            if (comma && cond)
+            {
+              chl.push_back(cond);
+            }
+          } while(comma && cond);
+
+        }
+      }
+    }
+  }
+  RET(NULL);
 }
 }
 
@@ -243,6 +333,10 @@ int Parser::Process(Lexer &lex)
     root->printTree();
   }
   if (ParseWS::idx != ss->size())
+  {
+    Node *fail = ss->at(ParseWS::idx);
+    cout << "Failed at parsing " << *fail << " at ln" << fail->ln << endl;
     return FAIL::PARSER;
+  }
   return 0;
 }

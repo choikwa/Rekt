@@ -1,7 +1,7 @@
 # author: thinkdoge
 
-CC=g++
-CFLAGS=-Wall -Wextra -g -c -std=c++1y
+CC=clang++
+CFLAGS=-Wall -Wextra -g -c -std=c++11
 LDFLAGS=
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
@@ -17,14 +17,14 @@ Rekt: $(OBJS)
 	
 depend: .depend
 
-.depend: $(SRCS)
+.depend: $(SRCS) idToNameMap.txt
 	rm -f ./.depend
 	$(CC) $(CFLAGS) -MM $^ > ./.depend
 	
-include .depend
-
-idToNameMap.txt nameToIdMap.txt: Lexemes.txt genTokenNameMap.py
+idToNameMap.txt: Lexemes.txt genTokenNameMap.py
 	python genTokenNameMap.py
+
+include .depend
 
 clean:
 	rm -f $(LIB) $(OBJS) .depend idToNameMap.txt nameToIdMap.txt Rekt

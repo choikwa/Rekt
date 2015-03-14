@@ -24,7 +24,10 @@ bool Node::operator==(const Node &n)
 }
 ostream& operator<<(ostream& os, const Node& n)
 {
-    os << "[" << idToNameMap.at(n.id) << "," << n.getval() << "]";
+    if (n.getval() == "" || isKeyword(n.id))
+      os << idToNameMap.at(n.id);
+    else
+      os << idToNameMap.at(n.id) << "'" << n.getval() << "'";
     return os;
 }
 Node::Node(int id, int numToAdd, Node *n, ...) : id(id)

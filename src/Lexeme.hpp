@@ -19,10 +19,11 @@ enum
 {
 #include "Lexemes.txt"
 };
-const unordered_set<string> keywords =
+const unordered_map<string, int> keywords =
 {
 #include "Keywords.txt"
 };
+bool isKeyword(int id);
 const unordered_set<string> types =
 {
     "int",
@@ -32,10 +33,6 @@ const unordered_set<string> types =
 const unordered_map<int, const char*> idToNameMap =
 {
 #include "idToNameMap.txt"
-};
-const unordered_map<string, int> nameToIdMap =
-{
-#include "nameToIdMap.txt"
 };
 }
 #endif /* LEXEME_HPP_ */

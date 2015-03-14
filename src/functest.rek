@@ -1,18 +1,19 @@
 int func()
 {
-  int test()
+  int test(int a, int b)
   {
     if(1)
     {
+      int wow_i_can_do_this()
+      {
 
+      }
     }
     else
     {
 
     }
   }
-  int a()
-int
-float
-char
+  int a(){}
+  int a(){}
 }

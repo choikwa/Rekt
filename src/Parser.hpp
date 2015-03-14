@@ -14,15 +14,18 @@ namespace AST
 class Node;
 }
 class Lexer;
+using namespace AST;
 namespace ParseWS
 {
-using namespace AST;
-void expect(Node n);
-void expect(Node n1, Node n2);
+void error(Node n);
+void error(Node n1, Node n2);
+Node *expect(Node n);
+Node *expect(Node n1, Node n2);
+Node *expectLex(int id);
 Node &curNode();
 Node *getNode();
-Node *lexMatch();
-Node *match();
+Node *lexMatch(int id);
+Node *match(Node n);
 Node *program();
 Node *stmt();
 Node *func();
@@ -32,9 +35,9 @@ Node *block();
 Node *f_if();
 Node *f_else();
 Node *exp();
+Node *f_for();
 }
 using namespace std;
-using namespace AST;
 class Parser
 {
 public:

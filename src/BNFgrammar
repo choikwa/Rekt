@@ -8,22 +8,24 @@ stmt: func    |                #things that a statement can be
       while   |
       switch  |
       overload |
+      call ';' |
       decl ';'   |
       decl '=' exp ';' |
       iden '=' exp ';'
       
-func: type iden args block                #a function
+func: decl args block                #a function
 type: 'int' | 'float' | 'char' | container  #scalar types or containers
 container: '[]' | '()' | '{}'               #list, set, dict
 args: '(' (decl)(',' decl)* ')'             #args are enclosed in parentheses
 decl: type iden
 block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
 
-if: 'if' '(' exp ')' (stmt | block) (else)?
-else: 'else' (if)? block
+if: 'if' '(' exp ')' (stmt | block) (elif | else)?
+else: 'else' if |
+      'else' (stmt | block)
 
 for: 'for' iterator block
-iterator: '{' type iden '|' (exp)(',' exp)* '}'
+iterator: '{' decl '|' (exp)(',' exp)* '}'
 
 while: 'while' '(' exp ')' block
       
