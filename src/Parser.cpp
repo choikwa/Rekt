@@ -297,7 +297,7 @@ Node *exp()
   if((n = call()) ||
      (n = lexMatch(IDEN)) ||
      (n = lexMatch(INT)) ||
-     (n = lexMatch(CHAR)) ||
+     (n = lexMatch(FLOAT)) ||
      (n = lexMatch(STR)))
   {
     if((op = lexMatch(BINOP)) ||
