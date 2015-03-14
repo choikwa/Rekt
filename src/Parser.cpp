@@ -40,8 +40,10 @@ static bool trace = getenv("traceParser");
 void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
 void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
   " at ln" << curNode().ln << endl; }
+void error(Node n1, Node n2, Node n3) { cout << "!!! Expected " << n1 << " or " << n2 <<
+  " or " << n3 << " at ln" << curNode().ln << endl; }
 
-Node *expect(Node n)
+Node *expect(Node n)	// throw error if not matched
 {
   Node *ret;
   if((ret = match(n)))
@@ -80,7 +82,7 @@ Node *getNode()
   Node *tmp = ss->at(idx);
   return tmp;
 }
-Node *lexMatch(int id)
+Node *lexMatch(int id)	// Only match the id and advance
 {
   Node *tmp = getNode();
   if (tmp && tmp->id == id)
@@ -90,7 +92,7 @@ Node *lexMatch(int id)
   }
   return NULL;
 }
-Node *match(Node n)
+Node *match(Node n)	// Full match unless keyword and advance
 {
   if(isKeyword(n.id))
     return lexMatch(n.id);
@@ -117,6 +119,8 @@ Node *stmt()
   if((n = func()) ||
      (n = f_if()) ||
      (n = f_for()) ||
+     (n = f_while()) ||
+     (n = f_switch()) ||
      ((n = call()) && lexMatch(SEMICOLON)))
   {
     RET(new Node(STMT, 1, n));
@@ -300,6 +304,16 @@ Node *exp()
      (n = lexMatch(FLOAT)) ||
      (n = lexMatch(STR)))
   {
+    if((n && (n->id == CALL || n->id == IDEN)) &&
+       (op = lexMatch(DOT)))
+    {
+      if((e = exp()))
+      {
+        Node *nexp = new Node(EXP, 2, n, e);
+        nexp->str = op->str;
+        RET(nexp);
+      } else error(EXP);
+    }
     if((op = lexMatch(BINOP)) ||
        (op = lexMatch(MINUS)))
     {
@@ -395,6 +409,67 @@ Node *call()
         Node *call = new Node(CALL, chl);
         call->str = n->str;
         RET(call);
+      }
+    }
+  }
+  RET(NULL);
+}
+Node *f_while()
+{
+  ENT();
+  if(lexMatch(WHILE))
+  {
+    if(expect(Node(BRACKET, "(")))
+    {
+      if(Node *e = exp())
+      {
+        if(expect(Node(BRACKET, ")")))
+        {
+          if(Node *b = block())
+          {
+            RET(new Node(WHILE, 2, e, b));
+          } else error(BLOCK);
+        }
+      } else error(EXP);
+    }
+  }
+  RET(NULL);
+}
+Node *f_switch()
+{
+  ENT();
+  if(lexMatch(SWITCH))
+  {
+    if(expect(Node(BRACKET, "(")))
+    {
+      if(Node *e = exp())
+      {
+        vector<Node *> chl;
+        chl.push_back(e);
+        if(expect(Node(BRACKET, ")")) &&
+           expect(Node(BRACKET, "{")))
+        {
+          Node *test;
+          while((test = exp()) ||
+                (test = lexMatch(ALL)) ||
+                (test = lexMatch(NONE)))
+          {
+            if(lexExpect(COLON))
+            {
+              vector<Node*> tmp;
+              while(Node *s = stmt())
+              {
+                tmp.push_back(s);
+              }
+              Node *mycase = new Node(CASE, 1, test);
+              mycase->children.insert(mycase->children.end(), tmp.begin(), tmp.end());
+              chl.push_back(mycase);
+            }
+          }
+          if(chl.size() < 2) error(EXP, ALL, NONE); // need at least one case
+          if(expect(Node(BRACKET, "}")))
+            RET(new Node(SWITCH, chl));
+        }
       }
     }
   }

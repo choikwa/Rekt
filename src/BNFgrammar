@@ -31,14 +31,16 @@ while: 'while' '(' exp ')' block
       
 switch: 'switch' '(' exp ')'
         '{'
-           (exp ':' (stmt)*) |
-           ('all' ':' (stmt)*) |
-           ('none' ':' (stmt)*)
+           ( exp ':' (stmt)* |
+             'all' ':' (stmt)* |
+             'none' ':' (stmt)* )
         '}'
 
 call: iden '(' (exp)(',' exp)* ')'
-
-exp: call | iden | Number | String | exp binop exp | unop exp
+exp: call '.' exp |
+     iden '.' exp | 
+     call | iden | Number | 
+     String | exp binop exp | unop exp
 expr:
 binop: '+’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
        '<’ | '<=’ | '>’ | '>=’ | '==’ | 

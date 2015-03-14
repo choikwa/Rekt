@@ -69,6 +69,7 @@ int Lexer::Process(const Opt &opt)
     case '\'':
     case '\"': processStrLit(str, it, ln); break;
     case ',': ADDLEXEME(COMMA, c); it++; break;
+    case '.': ADDLEXEME(DOT, c); it++; break;
     case ';': ADDLEXEME(SEMICOLON, c); it++; break;
     case ':': ADDLEXEME(COLON, c); it++; break;
     case '-': ADDLEXEME(MINUS, c); it++; break;

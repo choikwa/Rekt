@@ -5,7 +5,7 @@ int func(int z, float x, [] c, () v)
   float b = 1.0;
   [] c = 'c' + "dasdf" - "df";  #"casf"  - single line comment
 
-  d = [1, 2.0, '3', "4", [5,'a'], (6), {7:8}];
+  [] d = [1, 2.0, '3', "4", [5,'a'], (6), {7:8}];
   # not sure if float key type is desirable
 
   e = {1:a, 2.0:b, 'a':c , {x|'asdf'}:a };

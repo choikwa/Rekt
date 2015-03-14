@@ -39,6 +39,8 @@ Node *exp();
 Node *f_for();
 Node *iterator();
 Node *call();
+Node *f_while();
+Node *f_switch();
 }
 using namespace std;
 class Parser

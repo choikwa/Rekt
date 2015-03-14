@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-
+#include "Rekt.hpp"
 
 using namespace std;
 
@@ -75,13 +75,13 @@ int Opt::Process(int argc, char **argv)
       continue;
     }
     cout << "Non-option arg: " << argv[idx] << endl;
-    return 1;
+    return FAIL::OPT+1;
   }
   if ((src.empty() && !opts[Link].on) ||
       (!opts[Preprocessor].on && !opts[Assembly].on && !opts[Object].on && !opts[Link].on))
   {
     cout << "Wrong arguments given" << endl;
-    return 2;
+    return FAIL::OPT+2;
   }
 
   return 0;
