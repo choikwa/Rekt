@@ -34,9 +34,9 @@ namespace ParseWS
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
-#define TRACE() { if(trace) tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
-  cout << __func__ << endl;}
-#define RET(x) { tab-=2; return x; }
+#define ENT() auto old = idx; { if(trace) tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
+  cout << __func__ << endl; }
+#define RET(x) { if(x==NULL) idx = old; tab-=2; return x; }
 void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
 void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
   " at ln" << curNode().ln << endl; }
@@ -105,36 +105,51 @@ Node *match(Node n)
 }
 Node *program()
 {
-  TRACE();
+  ENT();
   vector<Node*> stmts;
   while(Node *type = stmt()) { stmts.push_back(type); }
   RET(new Node(PROGRAM, stmts));
 }
 Node *stmt()
 {
-  TRACE();
+  ENT();
   Node *n, *e;
   if((n = func()) ||
      (n = f_if()) ||
      (n = f_for()) ||
-     ((n = call()) && lexMatch(SEMICOLON)) ||
-     ((n = lexMatch(DECL)) && lexMatch(SEMICOLON)))
+     ((n = call()) && lexMatch(SEMICOLON)))
   {
     RET(new Node(STMT, 1, n));
   }
-  else if(((n = lexMatch(DECL)) || (n = lexMatch(IDEN))) && lexMatch(ASSIGN))
+  else if((n = decl()))
   {
-    if((e = exp()))
+    if(lexMatch(SEMICOLON))
+      RET(new Node(STMT, 1, n));
+    if(lexExpect(ASSIGN))
     {
-      if(lexExpect(SEMICOLON))
-        RET(new Node(EXP, 2, n, e));
-    } else error(EXP);
+      if((e = exp()))
+      {
+        if(lexExpect(SEMICOLON))
+          RET(new Node(STMT, 2, n, e));
+      } else error(EXP);
+    }
+  }
+  else if((n = lexMatch(IDEN)))
+  {
+    if(lexExpect(ASSIGN))
+    {
+      if((e = exp()))
+      {
+        if(lexExpect(SEMICOLON))
+          RET(new Node(STMT, 2, n, e));
+      } else error(EXP);
+    }
   }
   RET(NULL);
 }
 Node *func()
 {
-  TRACE();
+  ENT();
   if(Node *n_decl = decl())
   {
     if (Node *n_args = args())
@@ -143,14 +158,14 @@ Node *func()
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
         RET(fn);
-      } error(BLOCK);
+      } else error(BLOCK);
     }
   }
   RET(NULL);
 }
 Node *args()
 {
-  TRACE();
+  ENT();
   vector<Node*> children;
   if(match(Node(BRACKET, "(")))
   {
@@ -175,7 +190,7 @@ Node *args()
 }
 Node *decl()
 {
-  TRACE();
+  ENT();
   if (Node *type = lexMatch(TYPE))
   {
     if (Node *iden = lexExpect(IDEN))
@@ -187,7 +202,7 @@ Node *decl()
 }
 Node *block()
 {
-  TRACE();
+  ENT();
   if(match(Node(BRACKET, "{")))
   {
     vector<Node *> stmts;
@@ -202,7 +217,7 @@ Node *block()
 }
 Node *f_if()
 {
-  TRACE();
+  ENT();
   if(match(IF))
   {
     vector<Node*> chl;
@@ -222,7 +237,7 @@ Node *f_if()
             chl.push_back(b);
           }
           else
-            cout << "!!! Expected STMT or BLOCK at ln" << curNode().ln << endl;
+            error(STMT, BLOCK);
 
           if(Node *n_else = f_else())
           {
@@ -237,7 +252,7 @@ Node *f_if()
 }
 Node *f_else()
 {
-  TRACE();
+  ENT();
   vector<Node *> chl;
   if(match(ELSE))
   {
@@ -258,7 +273,7 @@ Node *f_else()
       }
       else
       {
-        cout << "!!! Expected STMT or BLOCK at ln" << curNode().ln << endl;
+        error(STMT, BLOCK);
         RET(NULL);
       }
       RET(new Node(ELSE, chl));
@@ -268,9 +283,10 @@ Node *f_else()
 }
 Node *exp()
 {
-  TRACE();
+  ENT();
   Node *n, *op, *e;
-  if((n = lexMatch(IDEN)) ||
+  if((n = call()) ||
+     (n = lexMatch(IDEN)) ||
      (n = lexMatch(INT)) ||
      (n = lexMatch(CHAR)) ||
      (n = lexMatch(STR)))
@@ -297,7 +313,7 @@ Node *exp()
 }
 Node *f_for()
 {
-  TRACE();
+  ENT();
   if(lexMatch(FOR))
   {
     if(Node *iter = iterator())
@@ -312,7 +328,7 @@ Node *f_for()
 }
 Node *iterator()
 {
-  TRACE();
+  ENT();
   if(match(Node(BRACKET, "{")))
   {
     vector<Node*> chl;
@@ -347,7 +363,7 @@ Node *iterator()
 }
 Node *call()
 {
-  TRACE();
+  ENT();
   if(Node *n = lexMatch(IDEN))
   {
     vector<Node*> chl;

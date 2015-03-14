@@ -38,7 +38,7 @@ switch: 'switch' '(' exp ')'
 
 call: iden '(' (exp)(',' exp)* ')'
 
-exp: iden | Number | String | exp binop exp | unop exp
+exp: call | iden | Number | String | exp binop exp | unop exp
 expr:
 binop: '+’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
        '<’ | '<=’ | '>’ | '>=’ | '==’ | 
