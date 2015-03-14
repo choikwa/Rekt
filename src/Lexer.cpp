@@ -100,12 +100,19 @@ int Lexer::Process(const Opt &opt)
 #ifdef ADDLEXEME
 #undef ADDLEXEME
 #endif
+  cout << endl;
+  cout << "------------------------" << endl;
+  for (auto it : lexemes)
+  {
+    cout << it->getval() << " ";
+  }
+  cout << endl;
 
-//  cout << "\n\n====[Enum] [val] [lineno]====" << endl;
-//  for (auto &it: lexemes)
-//  {
-//    cout << '[' << NameMap.at(it.id) << "] [" << it.getval() << "] [l:" << it.ln << ']' << endl;
-//  }
+  cout << "------------------------" << endl;
+  for (auto it : lexemes)
+  {
+    cout << *it << " ";
+  }
   cout << endl;
   return 0;
 }

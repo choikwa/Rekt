@@ -59,7 +59,7 @@ Node *expect(Node n1, Node n2)
     error(n1, n2);
   return NULL;
 }
-Node *expectLex(int id)
+Node *lexExpect(int id)
 {
   Node *ret;
   if((ret = lexMatch(id)))
@@ -113,17 +113,22 @@ Node *program()
 Node *stmt()
 {
   TRACE();
-  if(Node *n = func())
+  Node *n, *e;
+  if((n = func()) ||
+     (n = f_if()) ||
+     (n = f_for()) ||
+     ((n = call()) && lexMatch(SEMICOLON)) ||
+     ((n = lexMatch(DECL)) && lexMatch(SEMICOLON)))
   {
     RET(new Node(STMT, 1, n));
   }
-  else if (Node *n = f_if())
+  else if(((n = lexMatch(DECL)) || (n = lexMatch(IDEN))) && lexMatch(ASSIGN))
   {
-    RET(new Node(STMT, 1, n));
-  }
-  else if (Node *n = f_for())
-  {
-    RET(new Node(STMT, 1, n));
+    if((e = exp()))
+    {
+      if(lexExpect(SEMICOLON))
+        RET(new Node(EXP, 2, n, e));
+    } else error(EXP);
   }
   RET(NULL);
 }
@@ -173,7 +178,7 @@ Node *decl()
   TRACE();
   if (Node *type = lexMatch(TYPE))
   {
-    if (Node *iden = expectLex(IDEN))
+    if (Node *iden = lexExpect(IDEN))
     {
       RET(new Node(DECL, 2, type, iden));
     }
@@ -261,34 +266,65 @@ Node *f_else()
   }
   RET(NULL);
 }
-Node *exp() // todo
+Node *exp()
 {
   TRACE();
-  idx++;
-  RET(new Node(EXP));
+  Node *n, *op, *e;
+  if((n = lexMatch(IDEN)) ||
+     (n = lexMatch(INT)) ||
+     (n = lexMatch(CHAR)) ||
+     (n = lexMatch(STR)))
+  {
+    if((op = lexMatch(BINOP)) ||
+       (op = lexMatch(MINUS)))
+    {
+      if((e = exp()))
+      {
+        RET(new Node(EXP, 3, n, op, e));
+      } else error(EXP);
+    }
+    RET(n);
+  }
+  else if((op = lexMatch(UNOP)) ||
+          (op = lexMatch(MINUS)))
+  {
+    if((e = exp()))
+    {
+      RET(new Node(EXP, 2, op, e))
+    } else error(EXP);
+  }
+  RET(NULL);
 }
 Node *f_for()
 {
   TRACE();
-  if(match(FOR))
+  if(lexMatch(FOR))
   {
-    if(expect(Node(BRACKET, "{")))
+    if(Node *iter = iterator())
     {
-      vector<Node*> chl;
-      if(Node *n_decl = decl())
+      if(Node *b = block())
       {
-        chl.push_back(n_decl);
-        if(expect(Node(BINOP, "|")))
+        RET(new Node(FOR, 2, iter, b));
+      } else error(BLOCK);
+    } else error(ITERATOR);
+  }
+  RET(NULL);
+}
+Node *iterator()
+{
+  TRACE();
+  if(match(Node(BRACKET, "{")))
+  {
+    vector<Node*> chl;
+    if(Node *n_decl = decl())
+    {
+      chl.push_back(n_decl);
+      if(expect(Node(BINOP, "|")))
+      {
+        Node *cond;
+        if((cond = exp()))
         {
-          cout << "got '|'" << endl;
-          Node *cond;
-          if((cond = exp()))
-          {
-            cout << "pushed " << cond << endl;
-            chl.push_back(cond);
-          }
-          else
-            error(EXP);
+          chl.push_back(cond);
           Node *comma;
           do
           {
@@ -299,8 +335,38 @@ Node *f_for()
               chl.push_back(cond);
             }
           } while(comma && cond);
-
+        } else error(EXP);  // Need at least one exp for iterator
+        if(expect(Node(BRACKET, "}")))
+        {
+          RET(new Node(ITERATOR, chl));
         }
+      }
+    }
+  }
+  RET(NULL);
+}
+Node *call()
+{
+  TRACE();
+  if(Node *n = lexMatch(IDEN))
+  {
+    vector<Node*> chl;
+    chl.push_back(n);
+    if(match(Node(BRACKET, "(")))
+    {
+      if(Node *e = exp())
+      {
+        chl.push_back(e);
+        Node *comma;
+        do
+        {
+          if((comma = lexMatch(COMMA)) && (e = exp()))
+            chl.push_back(e);
+        } while(comma && e);
+      }
+      if(expect(Node(BRACKET, ")")))
+      {
+        RET(new Node(CALL, chl));
       }
     }
   }
@@ -310,24 +376,11 @@ Node *f_for()
 
 int Parser::Process(Lexer &lex)
 {
-  cout << "======== PARSER ========" << endl;
-  for (auto it : lex.lexemes)
-  {
-    cout << it->getval() << " ";
-  }
-  cout << endl;
-
-  cout << "======= Lexemes ========" << endl;
-  for (auto it : lex.lexemes)
-  {
-    cout << *it << " ";
-  }
-  cout << endl;
-  cout << "======== Recursive Descent ========" << endl;
+  cout << endl << "======== PARSER ========" << endl;
   ss = &lex.lexemes;
   root = ParseWS::program();  // recursive descent parsing!
 
-  cout << "======== AST TREE ========" << endl;
+  cout << "-------- AST TREE --------" << endl;
   if (root)
   {
     root->printTree();

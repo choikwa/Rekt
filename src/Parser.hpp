@@ -21,7 +21,7 @@ void error(Node n);
 void error(Node n1, Node n2);
 Node *expect(Node n);
 Node *expect(Node n1, Node n2);
-Node *expectLex(int id);
+Node *lexExpect(int id);
 Node &curNode();
 Node *getNode();
 Node *lexMatch(int id);
@@ -36,6 +36,8 @@ Node *f_if();
 Node *f_else();
 Node *exp();
 Node *f_for();
+Node *iterator();
+Node *call();
 }
 using namespace std;
 class Parser
