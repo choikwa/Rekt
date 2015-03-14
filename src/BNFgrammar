@@ -14,9 +14,9 @@ stmt: func    |                #things that a statement can be
       iden '=' exp ';'
       
 func: decl args block                #a function
-type: 'int' | 'float' | 'char' | container  #scalar types or containers
-container: '[]' | '()' | '{}'               #list, set, dict
-args: '(' (decl)(',' decl)* ')'             #args are enclosed in parentheses
+type: 'int' | 'float' | 'char' |     #scalar types or containers
+      '[]' | '()' | '{}'             #list, set, dict
+args: '(' (decl)(',' decl)* ')'      #args are enclosed in parentheses
 decl: type iden
 block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
 

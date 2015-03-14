@@ -31,6 +31,7 @@ Node *stmt();
 Node *func();
 Node *args();
 Node *decl();
+Node *type();
 Node *block();
 Node *f_if();
 Node *f_else();

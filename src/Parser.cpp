@@ -113,7 +113,7 @@ Node *program()
 Node *stmt()
 {
   ENT();
-  Node *n, *e;
+  Node *n, *e, *assign;
   if((n = func()) ||
      (n = f_if()) ||
      (n = f_for()) ||
@@ -125,23 +125,23 @@ Node *stmt()
   {
     if(lexMatch(SEMICOLON))
       RET(new Node(STMT, 1, n));
-    if(lexExpect(ASSIGN))
+    if((assign = lexExpect(ASSIGN)))
     {
       if((e = exp()))
       {
         if(lexExpect(SEMICOLON))
-          RET(new Node(STMT, 2, n, e));
+          RET(new Node(STMT, 3, n, assign, e));
       } else error(EXP);
     }
   }
   else if((n = lexMatch(IDEN)))
   {
-    if(lexExpect(ASSIGN))
+    if((assign = lexExpect(ASSIGN)))
     {
       if((e = exp()))
       {
         if(lexExpect(SEMICOLON))
-          RET(new Node(STMT, 2, n, e));
+          RET(new Node(STMT, 3, n, assign, e));
       } else error(EXP);
     }
   }
@@ -191,13 +191,22 @@ Node *args()
 Node *decl()
 {
   ENT();
-  if (Node *type = lexMatch(TYPE))
+  if (Node *n_type = type())
   {
     if (Node *iden = lexExpect(IDEN))
     {
-      RET(new Node(DECL, 2, type, iden));
+      RET(new Node(DECL, 2, n_type, iden));
     }
   }
+  RET(NULL);
+}
+Node *type()
+{
+  ENT();
+  if(Node *t = lexMatch(TYPE)) { RET(t); } // int, float, char
+  if(match(Node(BRACKET, "[")) && match(Node(BRACKET, "]"))) RET(new Node(TYPE, "[]"));
+  if(match(Node(BRACKET, "(")) && match(Node(BRACKET, ")"))) RET(new Node(TYPE, "()"));
+  if(match(Node(BRACKET, "{")) && match(Node(BRACKET, "}"))) RET(new Node(TYPE, "{}"));
   RET(NULL);
 }
 Node *block()
