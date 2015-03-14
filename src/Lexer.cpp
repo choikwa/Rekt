@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cctype>
+#include <cstring>
 #include "Rekt.hpp"
 #include "Opt.hpp"
 #include "Lexer.hpp"
@@ -77,7 +78,7 @@ int Lexer::Process(const Opt &opt)
       if (string("+*/").find(c) != string::npos) { ADDLEXEME(BINOP, c); it++; break; }
       if (string("<>=").find(c) != string::npos)
       {
-        if (str[it+1] == '=') { ADDLEXEME(BINOP, c); it+=2; break; }
+        if (str[it+1] == '=') { ADDLEXEME(BINOP, string(1, c) + string("=")); it+=2; break; }
         else if (c == '=') { ADDLEXEME(ASSIGN, c); it++; break; }
         else { ADDLEXEME(BINOP, c); it++; break; }
       }

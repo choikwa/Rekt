@@ -34,8 +34,8 @@ namespace ParseWS
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
-#define ENT() auto old = idx; { if(trace) tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
-  cout << __func__ << endl; }
+#define ENT() auto old = idx; { if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
+  cout << __func__ << endl; }}
 #define RET(x) { if(x==NULL) idx = old; tab-=2; return x; }
 void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
 void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
@@ -305,7 +305,9 @@ Node *exp()
     {
       if((e = exp()))
       {
-        RET(new Node(EXP, 3, n, op, e));
+        Node *nexp = new Node(EXP, 2, n, e);
+        nexp->str = op->str;
+        RET(nexp);
       } else error(EXP);
     }
     RET(n);
@@ -376,7 +378,6 @@ Node *call()
   if(Node *n = lexMatch(IDEN))
   {
     vector<Node*> chl;
-    chl.push_back(n);
     if(match(Node(BRACKET, "(")))
     {
       if(Node *e = exp())
@@ -391,7 +392,9 @@ Node *call()
       }
       if(expect(Node(BRACKET, ")")))
       {
-        RET(new Node(CALL, chl));
+        Node *call = new Node(CALL, chl);
+        call->str = n->str;
+        RET(call);
       }
     }
   }
