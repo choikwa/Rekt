@@ -11,12 +11,14 @@ stmt: func    |                #things that a statement can be
       call ';' |
       decl ';' |
       decl '=' exp ';' |
-      iden '=' exp ';'
+      iden '=' exp ';' |
+      exp '=' exp ';' |
+      'return' exp ';'
       
 func: decl args block                #a function
 type: 'int' | 'float' | 'char' |     #scalar types or containers
       '[]' | '()' | '{}'             #list, set, dict
-args: '(' (decl)(',' decl)* ')'      #args are enclosed in parentheses
+parms: '(' (decl)(',' decl)* ')'      #args are enclosed in parentheses
 decl: type iden
 block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
 
@@ -25,7 +27,7 @@ else: 'else' if |
       'else' (stmt | block)
 
 for: 'for' iterator block
-iterator: '{' decl '|' exp(',' exp)* '}'
+iterator: '{' decl(',' decl)* '|' exp(',' exp)* '}'
 
 while: 'while' '(' exp ')' block
       
@@ -33,15 +35,14 @@ switch: 'switch' '(' exp ')'
         '{'
            ( exp ':' (stmt)* |
              'all' ':' (stmt)* |
-             'none' ':' (stmt)* )
+             'none' ':' (stmt)* )+
         '}'
 
 call: iden '(' (exp)(',' exp)* ')'
-exp: call '.' exp |
-     iden '.' exp | 
-     call | iden | Number | 
-     String | exp binop exp | unop exp
-expr:
+exp: '(' exp ')' |
+     (call|iden) '.' exp |
+     (call|iden) ('[' exp ']')* |
+     Number | exp binop exp | unop exp
 binop: '+’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
        '<’ | '<=’ | '>’ | '>=’ | '==’ | 
        '&' | '&&' | '|' | '||'

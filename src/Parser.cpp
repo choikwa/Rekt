@@ -34,8 +34,10 @@ namespace ParseWS
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
-#define ENT() auto old = idx; { if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
-  cout << __func__ << endl; }}
+#define ENT() auto old = idx; \
+  { if(idx >= ss->size()) { cout << "end of lex stream" << endl; return NULL; } \
+    if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
+    cout << __func__ << ": " << *ss->at(idx) << endl; }}
 #define RET(x) { if(x==NULL) idx = old; tab-=2; return x; }
 void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
 void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
@@ -78,7 +80,7 @@ Node *getNode()
     //cout << "end of lexeme stream" << endl;
     return NULL;
   }
-  //cout << "ss[" << idx << "]=" << *ss->at(idx) << endl;
+//  cout << "ss[" << idx << "]=" << *ss->at(idx) << endl;
   Node *tmp = ss->at(idx);
   return tmp;
 }
@@ -125,9 +127,10 @@ Node *stmt()
   {
     RET(new Node(STMT, 1, n));
   }
-  else if((n = decl()))
+  else if((n = decl()) ||
+          (n = exp()))
   {
-    if(lexMatch(SEMICOLON))
+    if(n->id == DECL && lexMatch(SEMICOLON))
       RET(new Node(STMT, 1, n));
     if((assign = lexExpect(ASSIGN)))
     {
@@ -138,16 +141,15 @@ Node *stmt()
       } else error(EXP);
     }
   }
-  else if((n = lexMatch(IDEN)))
+  else if ((n = lexMatch(RETURN)))
   {
-    if((assign = lexExpect(ASSIGN)))
+    if((e = exp()))
     {
-      if((e = exp()))
+      if(lexExpect(SEMICOLON))
       {
-        if(lexExpect(SEMICOLON))
-          RET(new Node(STMT, 3, n, assign, e));
-      } else error(EXP);
-    }
+        RET(new Node(STMT, 2, n, e));
+      }
+    } else error(EXP);
   }
   RET(NULL);
 }
@@ -156,7 +158,7 @@ Node *func()
   ENT();
   if(Node *n_decl = decl())
   {
-    if (Node *n_args = args())
+    if (Node *n_args = parms())
     {
       if (Node *n_block = block())
       {
@@ -167,7 +169,7 @@ Node *func()
   }
   RET(NULL);
 }
-Node *args()
+Node *parms()
 {
   ENT();
   vector<Node*> children;
@@ -187,7 +189,7 @@ Node *args()
     }
     if(match(Node(BRACKET, ")")))
     {
-      RET(new Node(ARGS, children));
+      RET(new Node(PARMS, children));
     } expect(Node(BRACKET, ")"));
   }
   RET(NULL);
@@ -297,29 +299,55 @@ Node *f_else()
 Node *exp()
 {
   ENT();
-  Node *n, *op, *e;
-  if((n = call()) ||
+  Node *n = NULL, *op = NULL, *e = NULL;
+  if(match(Node(BRACKET, "(")))
+  {
+    if((n = exp()))
+    {
+      expect(Node(BRACKET, ")"));
+    } else error(EXP, BINOP, UNOP);
+  }
+  if((n && (n->id == EXP || n->id == BINOP || n->id == UNOP || n->id == MINUS)) ||
+     (n = call()) ||
      (n = lexMatch(IDEN)) ||
      (n = lexMatch(INT)) ||
      (n = lexMatch(FLOAT)) ||
      (n = lexMatch(STR)))
   {
-    if((n && (n->id == CALL || n->id == IDEN)) &&
-       (op = lexMatch(DOT)))
+    if(n->id == CALL || n->id == IDEN)
     {
-      if((e = exp()))
+      if((op = lexMatch(DOT)))
       {
-        Node *nexp = new Node(EXP, 2, n, e);
-        nexp->str = op->str;
-        RET(nexp);
-      } else error(EXP);
+        if((e = exp()))
+        {
+          Node *nexp = new Node(EXP, 2, n, e);
+          nexp->str = op->str;
+          RET(nexp);
+        } else error(EXP);
+      }
+      if(match(Node(BRACKET, "[")))
+      {
+        idx--;
+        while(match(Node(BRACKET, "[")))
+        {
+          if((e = exp()))
+          {
+            // todo: match type of call/iden to exp inside '[]'
+            if(expect(Node(BRACKET, "]")))
+            {
+              n = new Node(EXP, 2, n, e);
+              n->str = "[]";
+            }
+          } else error(EXP);
+        }
+      }
     }
     if((op = lexMatch(BINOP)) ||
        (op = lexMatch(MINUS)))
     {
       if((e = exp()))
       {
-        Node *nexp = new Node(EXP, 2, n, e);
+        Node *nexp = new Node(op->id, 2, n, e);
         nexp->str = op->str;
         RET(nexp);
       } else error(EXP);
@@ -331,7 +359,7 @@ Node *exp()
   {
     if((e = exp()))
     {
-      RET(new Node(EXP, 2, op, e))
+      RET(new Node(op->id, 1, e))
     } else error(EXP);
   }
   RET(NULL);
@@ -357,16 +385,25 @@ Node *iterator()
   if(match(Node(BRACKET, "{")))
   {
     vector<Node*> chl;
-    if(Node *n_decl = decl())
+    if(Node *d = decl())
     {
-      chl.push_back(n_decl);
+      chl.push_back(d);
+      Node *comma;
+      do
+      {
+        comma = lexMatch(COMMA);
+        d = decl();
+        if (comma && d)
+        {
+          chl.push_back(d);
+        }
+      } while(comma && d);
       if(expect(Node(BINOP, "|")))
       {
         Node *cond;
         if((cond = exp()))
         {
           chl.push_back(cond);
-          Node *comma;
           do
           {
             comma = lexMatch(COMMA);
@@ -382,7 +419,7 @@ Node *iterator()
           RET(new Node(ITERATOR, chl));
         }
       }
-    }
+    } else error(DECL);
   }
   RET(NULL);
 }

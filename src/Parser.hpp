@@ -29,7 +29,7 @@ Node *match(Node n);
 Node *program();
 Node *stmt();
 Node *func();
-Node *args();
+Node *parms();
 Node *decl();
 Node *type();
 Node *block();
