@@ -1,9 +1,4 @@
 Rekt Language
 
-Language for the lazy and the elegant.
-
-For demonstration,
-
-      make
-      ./Rekt test.rek -o test
+Language for the lazy
 

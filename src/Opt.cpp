@@ -5,8 +5,7 @@
  *      Author: thinkdoge
  */
 
-#include "Opt.hpp"
-
+#include "Opt.h"
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -14,7 +13,8 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-#include "Rekt.hpp"
+
+#include "Rekt.h"
 
 using namespace std;
 
@@ -58,6 +58,19 @@ int Opt::Process(int argc, char **argv)
       break;
     }
   }
+  bool useDefaultOpt = true;
+  for(const auto &it : opts)
+  {
+  	if (it.second.on)
+  	{
+  		useDefaultOpt = false;
+  		break;
+  	}
+  }
+
+  if (useDefaultOpt)
+  	opts[Object].on = 1;
+
   for(const auto &it : opts)
   {
     cout << it.second.optName << " " << it.second.on << " ";

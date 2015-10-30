@@ -5,8 +5,8 @@
  *      Author: thinkdoge
  */
 
-#ifndef OPT_HPP_
-#define OPT_HPP_
+#ifndef OPT_H_
+#define OPT_H_
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -37,4 +37,4 @@ public:
   vector<string> objs;
 };
 
-#endif /* OPT_HPP_ */
+#endif /* OPT_H_ */

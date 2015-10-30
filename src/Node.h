@@ -8,7 +8,8 @@
 #ifndef NODE_H_
 #define NODE_H_
 #include <vector>
-#include "Lexeme.hpp"
+
+#include "Lexeme.h"
 namespace AST
 {
 using namespace std;

@@ -1,4 +1,4 @@
-#include "Lexeme.hpp"
+#include "Lexeme.h"
 
 namespace Lexeme
 {

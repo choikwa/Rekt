@@ -5,13 +5,14 @@
  *      Author: thinkdoge
  */
 
-#ifndef LEXER_HPP_
-#define LEXER_HPP_
+#ifndef LEXER_H_
+#define LEXER_H_
 
 #include <unordered_map>
 #include <vector>
 #include <deque>
-#include "Lexeme.hpp"
+
+#include "Lexeme.h"
 #include "Node.h"
 class Opt;
 using namespace std;
@@ -29,4 +30,4 @@ public:
 
 };
 
-#endif /* LEXER_HPP_ */
+#endif /* LEXER_H_ */

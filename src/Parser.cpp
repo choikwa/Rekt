@@ -5,13 +5,14 @@
  *      Author: thinkdoge
  */
 
+#include "Parser.h"
+
 #include <deque>
 #include <vector>
-#include "Parser.hpp"
-#include "Lexeme.hpp"
-#include "Lexer.hpp"
-#include "Rekt.hpp"
+#include "Lexeme.h"
+#include "Lexer.h"
 #include "Node.h"
+#include "Rekt.h"
 
 using namespace Lexeme;
 Parser::Parser() : root(NULL)
@@ -39,10 +40,11 @@ static bool trace = getenv("traceParser");
     if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
     cout << __func__ << ": " << *ss->at(idx) << endl; }}
 #define RET(x) { if(x==NULL) idx = old; tab-=2; return x; }
-void error(Node n) { cout << "!!! Expected " << n << " at ln" << curNode().ln << endl; }
-void error(Node n1, Node n2) { cout << "!!! Expected " << n1 << " or " << n2 <<
+#define ERR(n) do{ cout << __FILE__ << ":" << __LINE__ << ": !!! Error: Expected " << Node(n) << " at ln" << \
+		curNode().ln << endl; exit(0); } while(false);
+inline void error(Node n1, Node n2) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
   " at ln" << curNode().ln << endl; }
-void error(Node n1, Node n2, Node n3) { cout << "!!! Expected " << n1 << " or " << n2 <<
+inline void error(Node n1, Node n2, Node n3) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
   " or " << n3 << " at ln" << curNode().ln << endl; }
 
 Node *expect(Node n)	// throw error if not matched
@@ -51,7 +53,7 @@ Node *expect(Node n)	// throw error if not matched
   if((ret = match(n)))
     return ret;
   else
-    error(n);
+    ERR(n);
   return NULL;
 }
 Node *expect(Node n1, Node n2)
@@ -71,6 +73,15 @@ Node *lexExpect(int id)
   else
     cout << "!!! Expected " << idToNameMap.at(id) << " at ln" << curNode().ln << endl;
   return NULL;
+}
+void printTape()
+{
+	cout << "Tape: ";
+	for(auto i = idx; i < idx + 5 && i < ss->size(); i++)
+	{
+		cout << *ss->at(i) << " ";
+	}
+	cout << endl;
 }
 Node &curNode() { return *ss->at(idx); }
 Node *getNode()
@@ -94,6 +105,7 @@ Node *lexMatch(int id)	// Only match the id and advance
   }
   return NULL;
 }
+
 Node *match(Node n)	// Full match unless keyword and advance
 {
   if(isKeyword(n.id))
@@ -138,7 +150,7 @@ Node *stmt()
       {
         if(lexExpect(SEMICOLON))
           RET(new Node(STMT, 3, n, assign, e));
-      } else error(EXP);
+      } else ERR(EXP);
     }
   }
   else if ((n = lexMatch(RETURN)))
@@ -149,7 +161,7 @@ Node *stmt()
       {
         RET(new Node(STMT, 2, n, e));
       }
-    } else error(EXP);
+    } else ERR(EXP);
   }
   RET(NULL);
 }
@@ -164,7 +176,7 @@ Node *func()
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
         RET(fn);
-      } else error(BLOCK);
+      } else ERR(BLOCK);
     }
   }
   RET(NULL);
@@ -300,70 +312,97 @@ Node *exp()
 {
   ENT();
   Node *n = NULL, *op = NULL, *e = NULL;
-  if(match(Node(BRACKET, "(")))
+	op = NULL; e = NULL;
+	if(match(Node(BRACKET, "(")))
+	{
+		if((e = exp()))
+		{
+			expect(Node(BRACKET, ")"));
+		} else error(EXP, BINOP, UNOP);
+
+		n = new Node(BRACKET, 1, e);
+	}
+	else if((e = call()) ||
+		 (e = lexMatch(IDEN)) ||
+		 (e = lexMatch(INT)) ||
+		 (e = lexMatch(FLOAT)) ||
+		 (e = lexMatch(STR)))
+	{
+		n = e;
+	}
+	else if((op = lexMatch(UNOP)) ||
+					(op = lexMatch(MINUS)))
+	{
+		if((e = exp()))
+		{
+			n = new Node(op->id, 1, e);
+		} else ERR(EXP);
+	}
+  // Operator precedence
+
+  if (n)
   {
-    if((n = exp()))
-    {
-      expect(Node(BRACKET, ")"));
-    } else error(EXP, BINOP, UNOP);
-  }
-  if((n && (n->id == EXP || n->id == BINOP || n->id == UNOP || n->id == MINUS)) ||
-     (n = call()) ||
-     (n = lexMatch(IDEN)) ||
-     (n = lexMatch(INT)) ||
-     (n = lexMatch(FLOAT)) ||
-     (n = lexMatch(STR)))
-  {
-    if(n->id == CALL || n->id == IDEN)
-    {
-      if((op = lexMatch(DOT)))
-      {
-        if((e = exp()))
-        {
-          Node *nexp = new Node(EXP, 2, n, e);
-          nexp->str = op->str;
-          RET(nexp);
-        } else error(EXP);
-      }
-      if(match(Node(BRACKET, "[")))
-      {
-        idx--;
-        while(match(Node(BRACKET, "[")))
-        {
-          if((e = exp()))
-          {
-            // todo: match type of call/iden to exp inside '[]'
-            if(expect(Node(BRACKET, "]")))
-            {
-              n = new Node(EXP, 2, n, e);
-              n->str = "[]";
-            }
-          } else error(EXP);
-        }
-      }
-    }
-    if((op = lexMatch(BINOP)) ||
-       (op = lexMatch(MINUS)))
-    {
-      if((e = exp()))
-      {
-        Node *nexp = new Node(op->id, 2, n, e);
-        nexp->str = op->str;
-        RET(nexp);
-      } else error(EXP);
-    }
-    RET(n);
-  }
-  else if((op = lexMatch(UNOP)) ||
-          (op = lexMatch(MINUS)))
-  {
-    if((e = exp()))
-    {
-      RET(new Node(op->id, 1, e))
-    } else error(EXP);
+  	n = r_exp(n);
+  	RET(n);
   }
   RET(NULL);
 }
+
+Node *r_exp(Node *n)
+{
+	ENT();
+	Node *op = NULL, *e = NULL;
+	while(true)
+	{
+		bool found = false;
+		if(n->id == CALL || n->id == IDEN)
+		{
+			found = true;
+			if((op = lexMatch(DOT)))
+			{
+				if((e = exp()))
+				{
+					n = new Node(EXP, 2, n, e);
+					n->str = op->str;
+				} else ERR(EXP);
+			}
+			else if(match(Node(BRACKET, "[")))
+			{
+				idx--;
+				while(match(Node(BRACKET, "[")))
+				{
+					if((e = exp()))
+					{
+						// todo: match type of call/iden to exp inside '[]'
+						if(expect(Node(BRACKET, "]")))
+						{
+							n = new Node(EXP, 2, n, e);
+							n->str = "[]";
+						}
+					} else ERR(EXP);
+				}
+			}
+		}
+
+		if((op = lexMatch(BINOP)) ||
+			 (op = lexMatch(MINUS)))
+		{
+			found = true;
+			if((e = exp()))
+			{
+				n = new Node(op->id, 2, n, e);
+				n->str = op->str;
+			} else ERR(EXP);
+		}
+
+		if(!found)
+			break;
+	}
+	if(n)
+		RET(n);
+	RET(NULL);
+}
+
 Node *f_for()
 {
   ENT();
@@ -374,8 +413,8 @@ Node *f_for()
       if(Node *b = block())
       {
         RET(new Node(FOR, 2, iter, b));
-      } else error(BLOCK);
-    } else error(ITERATOR);
+      } else ERR(BLOCK);
+    } else ERR(ITERATOR);
   }
   RET(NULL);
 }
@@ -413,19 +452,20 @@ Node *iterator()
               chl.push_back(cond);
             }
           } while(comma && cond);
-        } else error(EXP);  // Need at least one exp for iterator
+        } else ERR(EXP);  // Need at least one exp for iterator
         if(expect(Node(BRACKET, "}")))
         {
           RET(new Node(ITERATOR, chl));
         }
       }
-    } else error(DECL);
+    } else ERR(DECL);
   }
   RET(NULL);
 }
 Node *call()
 {
   ENT();
+  auto oldIdx = idx;
   if(Node *n = lexMatch(IDEN))
   {
     vector<Node*> chl;
@@ -449,6 +489,7 @@ Node *call()
       }
     }
   }
+  idx = oldIdx;
   RET(NULL);
 }
 Node *f_while()
@@ -465,9 +506,9 @@ Node *f_while()
           if(Node *b = block())
           {
             RET(new Node(WHILE, 2, e, b));
-          } else error(BLOCK);
+          } else ERR(BLOCK);
         }
-      } else error(EXP);
+      } else ERR(EXP);
     }
   }
   RET(NULL);

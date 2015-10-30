@@ -5,17 +5,18 @@
  *      Author: thinkdoge
  */
 
+#include "Lexer.h"
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <unordered_map>
 #include <cctype>
 #include <cstring>
-#include "Rekt.hpp"
-#include "Opt.hpp"
-#include "Lexer.hpp"
-#include "Lexeme.hpp"
+#include "Lexeme.h"
 #include "Node.h"
+#include "Opt.h"
+#include "Rekt.h"
 
 using namespace std;
 using namespace Lexeme;

@@ -44,10 +44,26 @@ exp: '(' exp ')' |
      (call|iden) ('[' exp ']')* |
      Number | exp binop exp | unop exp
 binop: '+’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
-       '<’ | '<=’ | '>’ | '>=’ | '==’ | 
+       '<’ | '<=’ | '>’ | '>=’ | '==’ | '!=' |
        '&' | '&&' | '|' | '||'
 unop:  '!' | '~'
 minus: '-'
 anyop: [^0-9]+
 
 overload: type 'overload' '(' type (anyop|(anyop type)+) ')' block)  #overload operator(s)
+
+=== expression operator precedence ===
+(), [], .
+unary(-), !, ~
+*, /, %
++, -
+<, <=, >, >=, ==, !=
+&
+|
+^
+&&
+||
+=
+
+
+

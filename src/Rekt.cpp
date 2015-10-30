@@ -6,11 +6,12 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+#include "Rekt.h"
+
 #include <iostream>
-#include "Rekt.hpp"
-#include "Lexer.hpp"
-#include "Opt.hpp"
-#include "Parser.hpp"
+#include "Lexer.h"
+#include "Opt.h"
+#include "Parser.h"
 
 using namespace std;
 

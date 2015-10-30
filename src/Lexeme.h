@@ -5,8 +5,8 @@
  *      Author: thinkdoge
  */
 
-#ifndef LEXEME_HPP_
-#define LEXEME_HPP_
+#ifndef LEXEME_H_
+#define LEXEME_H_
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -35,4 +35,4 @@ const unordered_map<int, const char*> idToNameMap =
 #include "idToNameMap.txt"
 };
 }
-#endif /* LEXEME_HPP_ */
+#endif /* LEXEME_H_ */

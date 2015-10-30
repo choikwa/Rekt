@@ -5,8 +5,8 @@
  *      Author: thinkdoge
  */
 
-#ifndef PARSER_HPP_
-#define PARSER_HPP_
+#ifndef PARSER_H_
+#define PARSER_H_
 #include <unordered_map>
 #include <vector>
 namespace AST
@@ -17,7 +17,7 @@ class Lexer;
 using namespace AST;
 namespace ParseWS
 {
-void error(Node n);
+void ERR(Node n);
 void error(Node n1, Node n2);
 Node *expect(Node n);
 Node *expect(Node n1, Node n2);
@@ -36,6 +36,7 @@ Node *block();
 Node *f_if();
 Node *f_else();
 Node *exp();
+Node *r_exp(Node *n);
 Node *f_for();
 Node *iterator();
 Node *call();
@@ -54,4 +55,4 @@ public:
   Node *root;
 };
 
-#endif /* PARSER_HPP_ */
+#endif /* PARSER_H_ */
