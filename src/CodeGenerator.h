@@ -21,6 +21,7 @@ using namespace AST;
 namespace CodeGenWS
 {
 void defaultEval(Node *n);
+void keywordEval(const char *c, Node *n);
 void evaluate(Node *n);
 }
 class CodeGen
