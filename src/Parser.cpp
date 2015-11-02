@@ -395,8 +395,7 @@ Node *r_exp(Node *n)
       }
     }
 
-    // a * b + c
-    if((op = lexMatch(BINOP)) || (op = lexMatch(MINUS)))
+    if((op = lexMatch(BINOP)) || (op = lexMatch(MINUS)) || (op = lexMatch(ASSIGN)))
     {
       if((e = exp()))
       {

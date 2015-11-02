@@ -12,6 +12,7 @@
 #include "Lexer.h"
 #include "Opt.h"
 #include "Parser.h"
+#include "CodeGenerator.h"
 
 using namespace std;
 
@@ -23,14 +24,13 @@ int main(int argc, char **argv)
   Opt opt; if (!ret) ret = opt.Process(argc, argv);
 
   // 2) Lexer
-  Lexer lex; if (!ret) ret = lex.Process(opt);
+  Lexer lexer; if (!ret) ret = lexer.Process(opt);
 
   // 3) Parser
-  Parser pars; if (!ret) ret = pars.Process(lex);
+  Parser parser; if (!ret) ret = parser.Process(lexer);
 
-  // 4) Optimizer
-
-  // 5) CodeGenerator
+  // 4) CodeGenerator
+  CodeGen cg; if (!ret) ret = cg.Process(opt, parser);
 
   if (ret)
   {
