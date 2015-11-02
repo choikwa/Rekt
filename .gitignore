@@ -1,0 +1,6 @@
+.*
+*.xml
+*.swp
+*.o
+Rekt
+/src/Debug
