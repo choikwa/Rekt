@@ -42,6 +42,8 @@ Node *iterator();
 Node *call();
 Node *f_while();
 Node *f_switch();
+bool hasHigherOpPrecedence(const std::string &s1, const std::string &s2);
+Node *fixUpOpPrec(Node *n);
 }
 using namespace std;
 class Parser

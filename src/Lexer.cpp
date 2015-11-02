@@ -74,10 +74,12 @@ int Lexer::Process(const Opt &opt)
     case ';': ADDLEXEME(SEMICOLON, c); it++; break;
     case ':': ADDLEXEME(COLON, c); it++; break;
     case '-': ADDLEXEME(MINUS, c); it++; break;
+    case '~':
+    case '!': ADDLEXEME(UNOP, c); it++; break;
     default:
       if (string("[]{}()").find(c) != string::npos) { ADDLEXEME(BRACKET, c); it++; break; }
       // '-' is to be fixed up in parser as it can be unary as well
-      if (string("+*/").find(c) != string::npos) { ADDLEXEME(BINOP, c); it++; break; }
+      if (string("+*/%").find(c) != string::npos) { ADDLEXEME(BINOP, c); it++; break; }
       if (string("<>=").find(c) != string::npos)
       {
         if (str[it+1] == '=') { ADDLEXEME(BINOP, string(1, c) + string("=")); it+=2; break; }

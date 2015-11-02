@@ -6,13 +6,14 @@
  */
 
 #include "Parser.h"
-
+#include <queue>
 #include <deque>
 #include <vector>
 #include "Lexeme.h"
 #include "Lexer.h"
 #include "Node.h"
 #include "Rekt.h"
+#include <cstring>
 
 using namespace Lexeme;
 Parser::Parser() : root(NULL)
@@ -39,7 +40,7 @@ static bool trace = getenv("traceParser");
   { if(idx >= ss->size()) { cout << "end of lex stream" << endl; return NULL; } \
     if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
     cout << __func__ << ": " << *ss->at(idx) << endl; }}
-#define RET(x) { if(x==NULL) idx = old; tab-=2; return x; }
+#define RET(x) do{ if(x==NULL) idx = old; tab-=2; return x; } while(false);
 #define ERR(n) do{ cout << __FILE__ << ":" << __LINE__ << ": !!! Error: Expected " << Node(n) << " at ln" << \
 		curNode().ln << endl; exit(0); } while(false);
 inline void error(Node n1, Node n2) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
@@ -134,15 +135,13 @@ Node *stmt()
      (n = f_if()) ||
      (n = f_for()) ||
      (n = f_while()) ||
-     (n = f_switch()) ||
-     ((n = call()) && lexMatch(SEMICOLON)))
+     (n = f_switch()))
   {
     RET(new Node(STMT, 1, n));
   }
-  else if((n = decl()) ||
-          (n = exp()))
+  else if((n = decl()))
   {
-    if(n->id == DECL && lexMatch(SEMICOLON))
+    if(lexMatch(SEMICOLON))
       RET(new Node(STMT, 1, n));
     if((assign = lexExpect(ASSIGN)))
     {
@@ -162,6 +161,13 @@ Node *stmt()
         RET(new Node(STMT, 2, n, e));
       }
     } else ERR(EXP);
+  }
+  else if ((n = exp()))
+  {
+    if(lexMatch(SEMICOLON))
+      {
+      RET(new Node(STMT, 1, n));
+      } else ERR(EXP);
   }
   RET(NULL);
 }
@@ -312,95 +318,217 @@ Node *exp()
 {
   ENT();
   Node *n = NULL, *op = NULL, *e = NULL;
-	op = NULL; e = NULL;
-	if(match(Node(BRACKET, "(")))
-	{
-		if((e = exp()))
-		{
-			expect(Node(BRACKET, ")"));
-		} else error(EXP, BINOP, UNOP);
+  if (match(Node(BRACKET, "(")))
+  {
+    if ((e = exp()))
+    {
+      expect(Node(BRACKET, ")"));
+    }
+    else
+      error(EXP, BINOP, UNOP);
 
-		n = new Node(BRACKET, 1, e);
-	}
-	else if((e = call()) ||
-		 (e = lexMatch(IDEN)) ||
-		 (e = lexMatch(INT)) ||
-		 (e = lexMatch(FLOAT)) ||
-		 (e = lexMatch(STR)))
-	{
-		n = e;
-	}
-	else if((op = lexMatch(UNOP)) ||
-					(op = lexMatch(MINUS)))
-	{
-		if((e = exp()))
-		{
-			n = new Node(op->id, 1, e);
-		} else ERR(EXP);
-	}
-  // Operator precedence
+    n = new Node(BRACKET, 1, e);
+  }
+  else if ((e = call()) || (e = lexMatch(IDEN)) || (e = lexMatch(INT)) || (e = lexMatch(FLOAT)) || (e = lexMatch(STR)))
+  {
+    n = e;
+  }
+  else if ((op = lexMatch(UNOP)) || (op = lexMatch(MINUS)))
+  {
+    if ((e = exp()))
+    {
+      n = new Node(op->id, 1, e);
+      n->str = op->str;
+    }
+    else
+      ERR(EXP);
+  }
 
   if (n)
   {
-  	n = r_exp(n);
-  	RET(n);
+    n = r_exp(n);
+    // Fix up operator precedence if there are any seq of binops.
+    n = fixUpOpPrec(n);
+    RET(n);
   }
   RET(NULL);
 }
 
 Node *r_exp(Node *n)
 {
-	ENT();
-	Node *op = NULL, *e = NULL;
-	while(true)
-	{
-		bool found = false;
-		if(n->id == CALL || n->id == IDEN)
-		{
-			found = true;
-			if((op = lexMatch(DOT)))
-			{
-				if((e = exp()))
-				{
-					n = new Node(EXP, 2, n, e);
-					n->str = op->str;
-				} else ERR(EXP);
-			}
-			else if(match(Node(BRACKET, "[")))
-			{
-				idx--;
-				while(match(Node(BRACKET, "[")))
-				{
-					if((e = exp()))
-					{
-						// todo: match type of call/iden to exp inside '[]'
-						if(expect(Node(BRACKET, "]")))
-						{
-							n = new Node(EXP, 2, n, e);
-							n->str = "[]";
-						}
-					} else ERR(EXP);
-				}
-			}
-		}
+  ENT();
+  Node *op = NULL, *e = NULL;
+  while (true)
+  {
+    bool found = false;
+    if (n->id == CALL || n->id == IDEN)
+    {
+      if ((op = lexMatch(DOT)))
+      {
+        if ((e = exp()))
+        {
+          found = true;
+          n = new Node(EXP, 2, n, e);
+          n->str = op->str;
+        }
+        else
+          ERR(EXP);
+      }
+      else if (match(Node(BRACKET, "[")))
+      {
+        idx--;
+        while (match(Node(BRACKET, "[")))
+        {
+          if ((e = exp()))
+          {
+            // todo: match type of call/iden to exp inside '[]'
+            if (expect(Node(BRACKET, "]")))
+            {
+              found = true;
+              n = new Node(EXP, 2, n, e);
+              n->str = "[]";
+            }
+          }
+          else
+            ERR(EXP);
+        }
+      }
+    }
 
-		if((op = lexMatch(BINOP)) ||
-			 (op = lexMatch(MINUS)))
-		{
-			found = true;
-			if((e = exp()))
-			{
-				n = new Node(op->id, 2, n, e);
-				n->str = op->str;
-			} else ERR(EXP);
-		}
+    // a * b + c
+    if((op = lexMatch(BINOP)) || (op = lexMatch(MINUS)))
+    {
+      if((e = exp()))
+      {
+        found = true;
+        n = new Node(op->id, 2, n, e);
+        n->str = op->str;
+      }
+      else
+        ERR(EXP);
+    }
 
-		if(!found)
-			break;
-	}
-	if(n)
-		RET(n);
-	RET(NULL);
+    if (!found)
+      break;
+  }
+  if (n)
+    RET(n);
+  RET(NULL);
+}
+
+Node *fixUpOpPrec(Node *n)
+{
+  auto top = n;
+
+  //UNOPs
+  /*
+   * MINUS
+   *   UNOP
+   *     { (), [], . }   // stop if these seen.
+   */
+  if(top->id == UNOP || top->id == MINUS)
+  {
+    auto tmp = top;
+    auto prevTmp = tmp;
+    while(tmp->id == UNOP || tmp->id == MINUS)
+    {
+      prevTmp = tmp;
+      tmp = tmp->children[0];
+    }
+    auto lastUNOP = prevTmp; //cout << "lastUNOP" << endl; lastUNOP->printTree();
+    auto firstNonUNOP = tmp; //cout << "firstNonUNOP" << endl; firstNonUNOP->printTree();
+
+    while(!(tmp->id == UNOP ||
+            (tmp->id == MINUS && tmp->children.size() == 1) ||   // can't skip UNOP MINUS
+            tmp->id == BRACKET ||
+            tmp->id == DOT) &&
+          tmp->children.size() > 0)
+    {
+      prevTmp = tmp;
+      tmp = tmp->children[0];
+    }
+    auto newParent = prevTmp; //cout << "newParent" << endl; newParent->printTree();
+    auto stop = tmp;   //cout << "stop" << endl; stop->printTree();
+
+    if (lastUNOP != newParent)
+    {
+      newParent->children[0] = top;
+      lastUNOP->children[0] = stop;
+      top = firstNonUNOP;
+    }
+    //cout << "final result" << endl;
+    //top->printTree();
+  }
+
+  //BINOPs
+  std::queue<Node*> Q;
+  Q.push(top);
+  while(!Q.empty())
+  {
+    auto node = Q.front(); Q.pop();
+    if(node->id == BINOP || (node->id == MINUS && node->children.size() > 1))
+    {
+      auto secondChild = node->children[1];
+
+      /*
+       * BINOP'*'       BINOP'+'
+       *   INT'1'         BINOP'*'
+       *   BINOP'+' -->     INT'1'
+       *     INT'2'         INT'2'
+       *     INT'3'       INT'3'
+       */
+      if(secondChild->id == BINOP && hasHigherOpPrecedence(node->str, secondChild->str))
+      {
+        top = secondChild;
+        auto tmp2 = top->children.front();
+        n->children[1] = tmp2;
+        top->children[0] = n;
+        Q.push(top);
+      }
+    }
+  }
+  return top;
+}
+
+enum
+{
+  OPMULDIVMOD=0,
+  OPADDSUB,
+  OPCMP,
+  OPBITWISEAND,
+  OPBITWISEOR,
+  OPXOR,
+  OPAND,
+  OPOR,
+  OPASSIGN,
+  OPINVALID,
+};
+static int enumifyOp(const string &s1)
+{
+  auto cstr = s1.c_str();
+  if(strpbrk(cstr, "*/%"))
+    return OPMULDIVMOD;
+  if(strpbrk(cstr, "+-"))
+    return OPADDSUB;
+  if(strpbrk(cstr, "<>!") || strstr(cstr, "=="))
+    return OPCMP;
+  if(strstr(cstr, "&&"))
+    return OPAND;
+  if(strstr(cstr, "||"))
+    return OPOR;
+  if(strchr(cstr, '^'))
+    return OPXOR;
+  if(strchr(cstr, '&'))
+    return OPBITWISEAND;
+  if(strchr(cstr, '|'))
+    return OPBITWISEAND;
+  return OPINVALID;
+}
+bool hasHigherOpPrecedence(const string &s1, const string &s2)
+{
+if (enumifyOp(s1) < enumifyOp(s2))
+  return true;
+return false;
 }
 
 Node *f_for()
@@ -421,7 +549,7 @@ Node *f_for()
 Node *iterator()
 {
   ENT();
-  if(match(Node(BRACKET, "{")))
+  if(match(Node(BRACKET, "(")))
   {
     vector<Node*> chl;
     if(Node *d = decl())
@@ -453,7 +581,7 @@ Node *iterator()
             }
           } while(comma && cond);
         } else ERR(EXP);  // Need at least one exp for iterator
-        if(expect(Node(BRACKET, "}")))
+        if(expect(Node(BRACKET, ")")))
         {
           RET(new Node(ITERATOR, chl));
         }
@@ -553,6 +681,7 @@ Node *f_switch()
   }
   RET(NULL);
 }
+
 }
 
 int Parser::Process(Lexer &lex)
