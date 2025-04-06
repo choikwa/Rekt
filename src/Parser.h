@@ -9,6 +9,7 @@
 #define PARSER_H_
 #include <unordered_map>
 #include <vector>
+#include <string>
 namespace AST
 {
 class Node;

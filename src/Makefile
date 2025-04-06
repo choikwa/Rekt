@@ -22,7 +22,7 @@ depend: .depend
 	$(CC) $(CFLAGS) -MM $^ > ./.depend
 	
 idToNameMap.txt: Lexemes.txt genTokenNameMap.py
-	python genTokenNameMap.py
+	python3 genTokenNameMap.py
 
 include .depend
 

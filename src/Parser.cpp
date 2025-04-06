@@ -520,7 +520,7 @@ static int enumifyOp(const string &s1)
   if(strchr(cstr, '&'))
     return OPBITWISEAND;
   if(strchr(cstr, '|'))
-    return OPBITWISEAND;
+    return OPBITWISEOR;
   return OPINVALID;
 }
 bool hasHigherOpPrecedence(const string &s1, const string &s2)
