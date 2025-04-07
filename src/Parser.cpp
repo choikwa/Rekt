@@ -6,20 +6,22 @@
  */
 
 #include "Parser.h"
-#include <queue>
-#include <deque>
-#include <vector>
 #include "Lexeme.h"
 #include "Lexer.h"
 #include "Node.h"
 #include "Rekt.h"
+#include <queue>
+#include <deque>
+#include <vector>
 #include <cstring>
+#include <memory>
+#include <stack>
 
 using namespace Lexeme;
-Parser::Parser() : root(NULL)
+Parser::Parser() : root(NULL) 
 {
-  // TODO Auto-generated constructor stub
-
+  SymbolTable = std::unique_ptr<unordered_set<SymTabEnt>>(
+    new unordered_set<SymTabEnt>());
 }
 
 Parser::~Parser()
@@ -33,9 +35,12 @@ using namespace AST;
 static vector<Node*> *ss = NULL;
 namespace ParseWS
 {
+Parser *Parser = nullptr;
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
+stack<Node *> FuncStack;
+
 #define ENT() auto old = idx; \
   { if(idx >= ss->size()) { cout << "end of lex stream" << endl; return NULL; } \
     if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
@@ -43,10 +48,10 @@ static bool trace = getenv("traceParser");
 #define RET(x) do{ if(x==NULL) idx = old; tab-=2; return x; } while(false);
 #define ERR(n) do{ cout << __FILE__ << ":" << __LINE__ << ": !!! Error: Expected " << Node(n) << " at ln" << \
 		curNode().ln << endl; exit(0); } while(false);
-inline void error(Node n1, Node n2) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
-  " at ln" << curNode().ln << endl; }
-inline void error(Node n1, Node n2, Node n3) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
-  " or " << n3 << " at ln" << curNode().ln << endl; }
+void error(Node n1, Node n2) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
+  " at ln" << curNode().ln << endl; exit(0); }
+void error(Node n1, Node n2, Node n3) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
+  " or " << n3 << " at ln" << curNode().ln << endl; exit(0); }
 
 Node *expect(Node n)	// throw error if not matched
 {
@@ -84,7 +89,11 @@ void printTape()
 	}
 	cout << endl;
 }
+
 Node &curNode() { return *ss->at(idx); }
+
+Node *curFunc() { return FuncStack.top(); }
+
 Node *getNode()
 {
   if (idx >= ss->size())
@@ -123,6 +132,7 @@ Node *match(Node n)	// Full match unless keyword and advance
 Node *program()
 {
   ENT();
+  FuncStack.push(new Node(FUNC, "GLOBAL"));
   vector<Node*> stmts;
   while(Node *type = stmt()) { stmts.push_back(type); }
   RET(new Node(PROGRAM, stmts));
@@ -148,7 +158,25 @@ Node *stmt()
       if((e = exp()))
       {
         if(lexExpect(SEMICOLON))
+        {
+          // Add to SymTab, check one definition rule (ODR)
+          Parser::SymTabEnt Sym(curFunc(), n->children[0], 
+            n->children[1], curNode().ln);
+          if (auto search = Parser->SymbolTable->find(Sym);
+              search != Parser->SymbolTable->end())
+          {
+            cout << "!!! Error: multiple definition violates ODR {" 
+              << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
+              "} at ln " << curNode().ln << endl;
+            cout << "  Previously defined at ln" << 
+              (*search).lineno << endl;
+            exit(0);
+          }
+          else
+            Parser->SymbolTable->insert(Sym);
+
           RET(new Node(STMT, 3, n, assign, e));
+        }
       } else ERR(EXP);
     }
   }
@@ -178,9 +206,13 @@ Node *func()
   {
     if (Node *n_args = parms())
     {
+      auto *IncompleteFunc = new Node(FUNC, 2, n_decl, n_args);
+      IncompleteFunc->str = n_decl->children[1]->str; //IDEN
+      FuncStack.push(IncompleteFunc);
       if (Node *n_block = block())
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
+        FuncStack.pop();
         RET(fn);
       } else ERR(BLOCK);
     }
@@ -329,7 +361,8 @@ Node *exp()
 
     n = new Node(BRACKET, 1, e);
   }
-  else if ((e = call()) || (e = lexMatch(IDEN)) || (e = lexMatch(INT)) || (e = lexMatch(FLOAT)) || (e = lexMatch(STR)))
+  else if ((e = call()) || (e = lexMatch(IDEN)) || (e = lexMatch(INT)) || 
+           (e = lexMatch(FLOAT)) || (e = lexMatch(STR)))
   {
     n = e;
   }
@@ -579,7 +612,14 @@ Node *iterator()
               chl.push_back(cond);
             }
           } while(comma && cond);
-        } else ERR(EXP);  // Need at least one exp for iterator
+        }
+        else if (Node *it = iterable())
+        {
+          chl.push_back(it);
+        }
+        else 
+          error(EXP, Node("ITERABLE"));  // Need EXP(s) or ITERABLE
+        
         if(expect(Node(BRACKET, ")")))
         {
           RET(new Node(ITERATOR, chl));
@@ -589,6 +629,18 @@ Node *iterator()
   }
   RET(NULL);
 }
+
+Node *iterable()
+{
+  ENT();
+  if (Node *n = lexMatch(IDEN))
+  {
+    //todo: consult SymbolTable to check iterable
+    
+  }
+  RET(NULL);
+}
+
 Node *call()
 {
   ENT();
@@ -687,6 +739,7 @@ int Parser::Process(Lexer &lex)
 {
   cout << endl << "======== PARSER ========" << endl;
   ss = &lex.lexemes;
+  ParseWS::Parser = this;
   root = ParseWS::program();  // recursive descent parsing!
 
   cout << "-------- AST TREE --------" << endl;
@@ -699,6 +752,15 @@ int Parser::Process(Lexer &lex)
     Node *fail = ss->at(ParseWS::idx);
     cout << "Failed at parsing " << *fail << " at ln" << fail->ln << endl;
     return FAIL::PARSER;
+  }
+  bool dumpSymbols = true;
+  if (dumpSymbols) {
+    cout << "-------- Symbols --------" << endl;
+    for (const auto &e : *SymbolTable)
+    {
+      cout << *e.Func << ' ' << *e.Type << ' ' << *e.Iden << 
+        " ln" << e.lineno << '\n';
+    }
   }
   return 0;
 }

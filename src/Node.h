@@ -18,6 +18,7 @@ class Node
 {
 public:
   Node(){ cout << "Empty lexeme!" << endl; }
+  Node(string str) : id(IDEN), str(str) {}
   Node(int id) : id(id) {}
   Node(int id, long in, int ln=0) : id(id), val(in), ln(ln) {}
   Node(int id, double in, int ln=0) : id(id), dval(in), ln(ln) {}

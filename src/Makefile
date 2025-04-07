@@ -1,7 +1,7 @@
 # author: thinkdoge
 
 CC=clang++
-CFLAGS=-Wall -Wextra -g -c -std=c++11
+CFLAGS=-Wall -Wextra -g -c -std=c++17
 LDFLAGS=
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)

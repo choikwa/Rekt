@@ -27,7 +27,8 @@ else: 'else' if |
       'else' (stmt | block)
 
 for: 'for' iterator block
-iterator: '(' decl(',' decl)* '|' exp(',' exp)* ')'
+iterator: '(' decl(',' decl)* '|' (exp(',' exp)* | iterable) ')'
+iterable: iden
 
 while: 'while' '(' exp ')' block
       
