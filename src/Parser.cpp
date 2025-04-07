@@ -90,6 +90,8 @@ void printTape()
 	cout << endl;
 }
 
+Node *prevNode() { return idx > 0 ? ss->at(idx-1) : Parser->root; }
+
 Node &curNode() { return *ss->at(idx); }
 
 Node *curFunc() { return FuncStack.top(); }
@@ -161,7 +163,7 @@ Node *stmt()
         {
           // Add to SymTab, check one definition rule (ODR)
           Parser::SymTabEnt Sym(curFunc(), n->children[0], 
-            n->children[1], curNode().ln);
+            n->children[1], prevNode()->ln);
           if (auto search = Parser->SymbolTable->find(Sym);
               search != Parser->SymbolTable->end())
           {
