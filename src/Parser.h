@@ -71,11 +71,25 @@ public:
     bool operator==(const SymTabEnt &p) const
     {
       return *Func == *p.Func &&
-             *Type == *p.Type &&
              *Iden == *p.Iden;
     }
   };
   unique_ptr<unordered_set<SymTabEnt>> SymbolTable;
+
+  class FuncEnt
+  {
+  public:
+    FuncEnt(Node *D, Node *P, int ln) : Decl(D), Parms(P), 
+      lineno(ln) {}
+    Node *Decl, *Parms;
+    int lineno;
+    bool operator==(const FuncEnt &p) const
+    {
+      return *Decl == *p.Decl &&
+             *Parms == *p.Parms;
+    }
+  };
+  unique_ptr<unordered_set<FuncEnt>> FuncTable;
 };
 
 namespace std
@@ -87,7 +101,17 @@ namespace std
     typedef size_t result_type;
     size_t operator()(const Parser::SymTabEnt& x) const
     {
-      return x.Func->id ^ x.Type->id ^ x.Iden->id;
+      return x.Func->id ^ x.Iden->id;
+    }
+  };
+  template<>
+  struct hash<Parser::FuncEnt>
+  {
+    typedef Parser::FuncEnt argument_type;
+    typedef size_t result_type;
+    size_t operator()(const Parser::FuncEnt& x) const
+    {
+      return x.Decl->id ^ x.Parms->id;
     }
   };
 }

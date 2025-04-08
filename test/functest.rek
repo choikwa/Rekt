@@ -8,12 +8,16 @@ int func()
       {
 
       }
+      return wow_i_can_do_this();
     }
-    else
-    {
-
-    }
+    return 0;
   }
   int a(){}
-  int a(){}
+  int func1()
+  {
+    int t = test(1, 2);
+    int f = test(3, 4);
+    return t + f;
+  }
+  return 1;
 }

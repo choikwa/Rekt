@@ -18,10 +18,11 @@
 #include <stack>
 
 using namespace Lexeme;
+using namespace std;
 Parser::Parser() : root(NULL) 
 {
-  SymbolTable = std::unique_ptr<unordered_set<SymTabEnt>>(
-    new unordered_set<SymTabEnt>());
+  SymbolTable = make_unique<unordered_set<SymTabEnt>>();
+  FuncTable = make_unique<unordered_set<FuncEnt>>();
 }
 
 Parser::~Parser()
@@ -169,7 +170,7 @@ Node *stmt()
           {
             cout << "!!! Error: multiple definition violates ODR {" 
               << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
-              "} at ln " << curNode().ln << endl;
+              "} at ln " << Sym.lineno << endl;
             cout << "  Previously defined at ln" << 
               (*search).lineno << endl;
             exit(0);
@@ -201,6 +202,28 @@ Node *stmt()
   }
   RET(NULL);
 }
+string parmsToString(Node *parms) {
+  if (!parms)
+    return "";
+
+  string ss("(");
+  if (parms->children.size() > 0)
+  {
+    Node *e = parms->children[0]; // Decl's
+    ss.append(e->children[0]->str); // Type
+    ss.append(" ");
+    ss.append(e->children[1]->str); // Iden
+    for (unsigned i = 1; i < parms->children.size(); i++) {
+      e = parms->children[i];
+      ss.append(", ");
+      ss.append(e->children[0]->str);
+      ss.append(" ");
+      ss.append(e->children[1]->str);
+    }
+  }
+  ss.append(")");
+  return ss;
+}
 Node *func()
 {
   ENT();
@@ -208,6 +231,26 @@ Node *func()
   {
     if (Node *n_args = parms())
     {
+      // Add to FuncTable, check ODR
+      Parser::FuncEnt FnEnt(n_decl, n_args, prevNode()->ln);
+      if (auto search = Parser->FuncTable->find(FnEnt);
+          search != Parser->FuncTable->end())
+      {
+        cout << "!!! Error: multiple definition violates ODR {"
+          << *FnEnt.Decl->children[0] << ' '
+          << *FnEnt.Decl->children[1] << ' '
+          << parmsToString(FnEnt.Parms) << "} at ln " <<
+          FnEnt.lineno << endl;
+        cout << "  Previously defined at ln" <<
+          (*search).lineno << endl;
+        exit(0);
+      }
+      else {
+        cout << "FuncTable: inserting "
+          << *FnEnt.Decl->children[1] 
+          << endl;
+        Parser->FuncTable->insert(FnEnt);
+      }
       auto *IncompleteFunc = new Node(FUNC, 2, n_decl, n_args);
       IncompleteFunc->str = n_decl->children[1]->str; //IDEN
       FuncStack.push(IncompleteFunc);
@@ -215,7 +258,8 @@ Node *func()
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
         FuncStack.pop();
-        RET(fn);
+        
+                RET(fn);
       } else ERR(BLOCK);
     }
   }
@@ -755,8 +799,22 @@ int Parser::Process(Lexer &lex)
     cout << "Failed at parsing " << *fail << " at ln" << fail->ln << endl;
     return FAIL::PARSER;
   }
+  bool dumpFuncs = true;
+  if (dumpFuncs)
+  {
+    cout << "-------- Funcs --------" << endl;
+    for (const auto &e : *FuncTable)
+    {
+      cout << *e.Decl->children[0] << ' ' 
+        << *e.Decl->children[1] << ' ' 
+        << ParseWS::parmsToString(e.Parms) << ' '
+        << " ln" << e.lineno << '\n';
+    }
+  }
+
   bool dumpSymbols = true;
-  if (dumpSymbols) {
+  if (dumpSymbols) 
+  {
     cout << "-------- Symbols --------" << endl;
     for (const auto &e : *SymbolTable)
     {

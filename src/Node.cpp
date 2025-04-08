@@ -19,6 +19,20 @@ bool Node::operator==(const Node &n)
   if (id != n.id) return false;
   if (id == INT && val != n.val) return false;
   if (id == FLOAT && dval != n.dval) return false;
+  if (id == DECL)
+  {
+    return *this->children[0] == *n.children[0] &&
+      *this->children[1] == *n.children[1];
+  }
+  if (id == PARMS)
+  {
+    for (unsigned i = 0; i < this->children.size(); i++)
+    {
+      if (!(*this->children[i] == *n.children[i]))
+        return false;
+    }
+    return true;
+  }
   if (getval() != n.getval()) return false;
   return true;
 }
