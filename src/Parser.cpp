@@ -400,6 +400,25 @@ Node *f_else()
   }
   RET(NULL);
 }
+
+Node *dictent()
+{
+  ENT()
+  if (Node *key = exp())
+  {
+    if (lexExpect(COLON))
+    {
+      if (Node *value = exp())
+      {
+        Node *n = new Node(EXP, 2, key, value);
+        n->str = "DICTENT";
+        RET(n);
+      } else ERR("Value exp of dict key-value pair");
+    }
+  }
+  RET(NULL);
+}
+
 Node *exp()
 {
   ENT();
@@ -436,8 +455,33 @@ Node *exp()
     if (match(Node(BRACKET, "]")))
     {
       n = new Node(EXP, children);
+      n->str = "ULIST";
     } else
       expect(Node(BRACKET, "]"));
+  }
+  else if (match(Node(BRACKET, "{")))
+  {
+    // unnamed dict exp = null or comma separated (exp ':' exp)
+    vector<Node*> children;
+    if ((e = dictent()))
+    {
+      children.push_back(e);
+      Node *comma = nullptr;
+      Node *e2 = nullptr;
+      do
+      {
+        comma = lexMatch(COMMA);
+        e2 = exp();
+        if (comma && e2)
+          children.push_back(e2);
+      } while (comma && e2);
+    } 
+    if (match(Node(BRACKET, "}")))
+    {
+      n = new Node(EXP, children);
+      n->str = "UDICT";
+    } else
+      expect(Node(BRACKET, "}"));
   }
   else if ((e = call()) || (e = lexMatch(IDEN)) || (e = lexMatch(INT)) || 
            (e = lexMatch(FLOAT)) || (e = lexMatch(STR)))
