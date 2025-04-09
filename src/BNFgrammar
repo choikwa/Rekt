@@ -18,7 +18,7 @@ stmt: func    |                #things that a statement can be
 func: decl args block                #a function
 type: 'int' | 'float' | 'char' |     #scalar types or containers
       '[]' | '()' | '{}'             #list, set, dict
-parms: '(' (decl)(',' decl)* ')'      #args are enclosed in parentheses
+parms: '(' <null>|(decl)(',' decl)* ')'      #args are enclosed in parentheses
 decl: type iden
 block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
 
@@ -39,10 +39,13 @@ switch: 'switch' '(' exp ')'
              'none' ':' (stmt)* )+
         '}'
 
-call: iden '(' (exp)(',' exp)* ')'
-exp: '(' exp ')' |
-     (call|iden) '.' exp |
-     (call|iden) ('[' exp ']')* |
+call: iden '(' <null>|(exp)(',' exp)* ')'
+exp: '(' exp ')' |       # parenthesis exp
+     'set(' <null>|(exp)(',' exp)* ')' |                   #unnamed set exp
+     '[' <null>|(exp)(',' exp)* ']' |                      #unnamed list exp
+     '{' <null>|(exp ':' exp)(',' (exp ':' exp))* '}' |    #unnamed dict exp
+     (call|iden) '.' exp |          #member access
+     (call|iden) ('[' exp ']')* |   #multi-dim array
      Number | exp binop exp | unop exp
 binop: '+’ | '*’ | '/’ | '^’ | '%’ | '..’ | 
        '<’ | '<=’ | '>’ | '>=’ | '==’ | '!=' |

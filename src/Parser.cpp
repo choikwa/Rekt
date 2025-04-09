@@ -16,7 +16,9 @@
 #include <cstring>
 #include <memory>
 #include <stack>
+#include <cassert>
 
+#define assertm(exp, msg) assert((void(msg), exp));
 using namespace Lexeme;
 using namespace std;
 Parser::Parser() : root(NULL) 
@@ -42,11 +44,11 @@ static int tab = -2;
 static bool trace = getenv("traceParser");
 stack<Node *> FuncStack;
 
-#define ENT() auto old = idx; \
+#define ENT() auto __old = idx; \
   { if(idx >= ss->size()) { cout << "end of lex stream" << endl; return NULL; } \
     if(trace) { tab+=2; for(int d=tab; d>0; d--){ cout << " "; } \
     cout << __func__ << ": " << *ss->at(idx) << endl; }}
-#define RET(x) do{ if(x==NULL) idx = old; tab-=2; return x; } while(false);
+#define RET(x) do{ if(x==NULL) idx = __old; tab-=2; return x; } while(false);
 #define ERR(n) do{ cout << __FILE__ << ":" << __LINE__ << ": !!! Error: Expected " << Node(n) << " at ln" << \
 		curNode().ln << endl; exit(0); } while(false);
 void error(Node n1, Node n2) { cout << "!!! Error: Expected " << n1 << " or " << n2 <<
@@ -93,7 +95,11 @@ void printTape()
 
 Node *prevNode() { return idx > 0 ? ss->at(idx-1) : Parser->root; }
 
-Node &curNode() { return *ss->at(idx); }
+Node &curNode() 
+{
+  assertm(idx < ss->size(), "idx > ss->size()");
+  return *ss->at(idx);
+}
 
 Node *curFunc() { return FuncStack.top(); }
 
@@ -269,12 +275,13 @@ Node *parms()
 {
   ENT();
   vector<Node*> children;
-  if(match(Node(BRACKET, "(")))
+  if (match(Node(BRACKET, "(")))
   {
     if (Node *decl1 = decl())
     {
       children.push_back(decl1);
-      Node *comma, *decl2;
+      Node *comma = nullptr;
+      Node *decl2 = nullptr;
       do
       {
         comma = lexMatch(COMMA);
@@ -283,10 +290,11 @@ Node *parms()
           children.push_back(decl2);
       } while (comma && decl2);
     }
-    if(match(Node(BRACKET, ")")))
+    if (match(Node(BRACKET, ")")))
     {
       RET(new Node(PARMS, children));
-    } expect(Node(BRACKET, ")"));
+    } else 
+      expect(Node(BRACKET, ")"));
   }
   RET(NULL);
 }
@@ -398,6 +406,7 @@ Node *exp()
   Node *n = NULL, *op = NULL, *e = NULL;
   if (match(Node(BRACKET, "(")))
   {
+    // parenthesis exp
     if ((e = exp()))
     {
       expect(Node(BRACKET, ")"));
@@ -406,6 +415,29 @@ Node *exp()
       error(EXP, BINOP, UNOP);
 
     n = new Node(BRACKET, 1, e);
+  }
+  else if (match(Node(BRACKET, "[")))
+  {
+    // unnamed list exp = null or comma separated exp's
+    vector<Node*> children;
+    if ((e = exp()))
+    {
+      children.push_back(e);
+      Node *comma = nullptr;
+      Node *e2 = nullptr;
+      do
+      {
+        comma = lexMatch(COMMA);
+        e2 = exp();
+        if (comma && e2)
+          children.push_back(e2);
+      } while (comma && e2);
+    }
+    if (match(Node(BRACKET, "]")))
+    {
+      n = new Node(EXP, children);
+    } else
+      expect(Node(BRACKET, "]"));
   }
   else if ((e = call()) || (e = lexMatch(IDEN)) || (e = lexMatch(INT)) || 
            (e = lexMatch(FLOAT)) || (e = lexMatch(STR)))
@@ -425,7 +457,9 @@ Node *exp()
 
   if (n)
   {
-    n = r_exp(n);
+    Node *tmp = r_exp(n);
+    if (tmp)
+      n = tmp;
     // Fix up operator precedence if there are any seq of binops.
     n = fixUpOpPrec(n);
     RET(n);
