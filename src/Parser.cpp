@@ -201,13 +201,6 @@ Node *stmt()
       }
     } else ERR(EXP);
   }
-  else if ((n = exp()))
-  {
-    if(lexMatch(SEMICOLON))
-      {
-      RET(new Node(STMT, 1, n));
-      } else ERR(EXP);
-  }
   RET(NULL);
 }
 string parmsToString(Node *parms) {

@@ -2,11 +2,11 @@ int func()
 {
   int test(int a, int b)
   {
-    if(1)
+    if(a < 1 < b)
     {
       int wow_i_can_do_this()
       {
-
+        return 123123;
       }
       return wow_i_can_do_this();
     }

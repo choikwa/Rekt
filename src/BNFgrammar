@@ -8,7 +8,6 @@ stmt: func    |                #things that a statement can be
       while   |
       switch  |
       overload |
-      exp ';' |
       decl ';' |
       decl '=' exp ';' |
       iden '=' exp ';' |
