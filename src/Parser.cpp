@@ -17,6 +17,8 @@
 #include <memory>
 #include <stack>
 #include <cassert>
+#include <fstream>
+#include <sstream>
 
 #define assertm(exp, msg) assert((void(msg), exp));
 using namespace Lexeme;
@@ -471,7 +473,7 @@ Node *exp()
       do
       {
         comma = lexMatch(COMMA);
-        e2 = exp();
+        e2 = dictent();
         if (comma && e2)
           children.push_back(e2);
       } while (comma && e2);
@@ -858,7 +860,10 @@ Node *f_switch()
 }
 
 }
-
+namespace AST
+{
+extern stringstream dotss;
+}
 int Parser::Process(Lexer &lex)
 {
   cout << endl << "======== PARSER ========" << endl;
@@ -870,6 +875,19 @@ int Parser::Process(Lexer &lex)
   if (root)
   {
     root->printTree();
+    bool generateDotGraph = true;
+    if (generateDotGraph) {
+      root->printDot();
+      string dotout("Digraph G {\n");
+      dotout.append(AST::dotss.str()).append("\n}\n");
+      string outFN("/tmp/");
+      outFN.append(to_string(rand() % 1000)).append(".dot");
+      ofstream fout;
+      fout.open(outFN);
+      fout << dotout << endl;
+      fout.close();
+      cout << "dot output writen to " << outFN << endl;
+    }
   }
   if (ParseWS::idx != ss->size())
   {

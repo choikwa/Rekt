@@ -11,6 +11,7 @@
 #include "Node.h"
 #include <stack>
 #include <string>
+#include <fstream>
 
 using namespace std;
 namespace CodeGenWS
@@ -99,8 +100,8 @@ void evaluate(Node *n)
   //cout << "prog: " << prog << endl;
 }
 
-}
-#include <fstream>
+} // namespace CodeGenWS
+
 int CodeGen::Process(Opt &opt, Parser &parser)
 {
   auto top = parser.root;
@@ -110,7 +111,7 @@ int CodeGen::Process(Opt &opt, Parser &parser)
   cout << "C output: " << CodeGenWS::prog << endl;
   ofstream fileout;
   string outFilename("/tmp/");
-  outFilename.append(to_string(rand()%10000)).append(".c");
+  outFilename.append(to_string(rand() % 10000)).append(".c");
   fileout.open(outFilename);
   fileout << CodeGenWS::prog << endl;
   fileout.close();
