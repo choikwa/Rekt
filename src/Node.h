@@ -27,6 +27,7 @@ public:
   Node(int id, const char *in, int ln=0) : id(id), gid(nodeCount++), str(in), ln(ln) {}
   Node(int id, const string &in, int ln=0) : id(id), gid(nodeCount++), str(in), ln(ln) {}
   bool operator==(const Node &n);
+  bool operator!=(const Node &n) { return !(*this == n); }
   friend ostream& operator<<(ostream& os, const Node& dt);
   Node(int id, int numToAdd, Node *n, ...);
   Node(int id, const vector<Node*> &in) : id(id), gid(nodeCount++), children(in) {}

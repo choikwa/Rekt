@@ -60,11 +60,13 @@ void callEval(Node *n)
 }
 void defaultEval(Node *n)
 {
+  cout << "  defaultEval: ";
   prog.append(n->str).append(" ");
   for(auto &c : n->children)
   {
     evaluate(c);
   }
+  cout << "\n";
 }
 void keywordEval(const char *c, Node *n)
 {

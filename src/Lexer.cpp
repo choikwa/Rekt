@@ -77,7 +77,7 @@ int Lexer::Process(const Opt &opt)
     case '~':
     case '!': ADDLEXEME(UNOP, c); it++; break;
     default:
-      if (string("[]{}()").find(c) != string::npos) { ADDLEXEME(BRACKET, c); it++; break; }
+      if (string("@$[]{}()").find(c) != string::npos) { ADDLEXEME(BRACKET, c); it++; break; }
       // '-' is to be fixed up in parser as it can be unary as well
       if (string("+*/%").find(c) != string::npos) { ADDLEXEME(BINOP, c); it++; break; }
       if (string("<>=").find(c) != string::npos)

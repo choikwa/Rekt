@@ -7,9 +7,9 @@ SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:.cpp=.o)
 
 
-all: Rekt
+all: rekt
 
-Rekt: $(OBJS)
+rekt: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 
 %.o: %.cpp
@@ -27,7 +27,7 @@ idToNameMap.txt: Lexemes.txt genTokenNameMap.py
 include .depend
 
 clean:
-	rm -f $(LIB) $(OBJS) .depend idToNameMap.txt nameToIdMap.txt Rekt
+	rm -f $(LIB) $(OBJS) .depend idToNameMap.txt nameToIdMap.txt rekt
 	touch Lexemes.txt
 	
 .PHONY: clean

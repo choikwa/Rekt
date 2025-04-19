@@ -10,6 +10,7 @@
 #include "Lexer.h"
 #include "Node.h"
 #include "Rekt.h"
+#include "ExpToType.h"
 #include <queue>
 #include <deque>
 #include <vector>
@@ -40,7 +41,7 @@ using namespace AST;
 static vector<Node*> *ss = NULL;
 namespace ParseWS
 {
-Parser *Parser = nullptr;
+class Parser *Parser = nullptr;
 static size_t idx = 0;
 static int tab = -2;
 static bool trace = getenv("traceParser");
@@ -118,17 +119,19 @@ Node *getNode()
 }
 Node *lexMatch(int id)	// Only match the id and advance
 {
+  ENT();
   Node *tmp = getNode();
   if (tmp && tmp->id == id)
   {
     idx++;
-    return tmp;
+    RET(tmp);
   }
-  return NULL;
+  RET(NULL);
 }
 
 Node *match(Node n)	// Full match unless keyword and advance
 {
+  ENT();
   if(isKeyword(n.id))
     return lexMatch(n.id);
 
@@ -136,9 +139,9 @@ Node *match(Node n)	// Full match unless keyword and advance
   if (tmp && *tmp == n)
   {
     idx++;
-    return tmp;
+    RET(tmp);
   }
-  return NULL;
+  RET(NULL);
 }
 Node *program()
 {
@@ -162,6 +165,24 @@ Node *stmt()
   }
   else if((n = decl()))
   {
+    // Add to SymTab, check one definition rule (ODR)
+    Parser::SymTabEnt Sym(curFunc(), n->children[0], 
+      n->children[1], prevNode()->ln);
+    if (auto search = Parser->SymbolTable->find(Sym);
+        search != Parser->SymbolTable->end())
+    {
+      cout << "!!! Error: multiple definition violates ODR {" 
+        << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
+        "} at ln " << Sym.lineno << endl;
+      cout << "  Previously defined at ln" << 
+        (*search).lineno << endl;
+      exit(0);
+    }
+    else
+    {
+      cout << "SymTable: inserting " << *Sym.Type << " " << *Sym.Iden << endl;
+      Parser->SymbolTable->insert(Sym);
+    }
     if(lexMatch(SEMICOLON))
       RET(new Node(STMT, 1, n));
     if((assign = lexExpect(ASSIGN)))
@@ -170,22 +191,40 @@ Node *stmt()
       {
         if(lexExpect(SEMICOLON))
         {
-          // Add to SymTab, check one definition rule (ODR)
-          Parser::SymTabEnt Sym(curFunc(), n->children[0], 
-            n->children[1], prevNode()->ln);
-          if (auto search = Parser->SymbolTable->find(Sym);
-              search != Parser->SymbolTable->end())
+          // Type Check
+          if (*n->children[0] != *TypeOf(e))
           {
-            cout << "!!! Error: multiple definition violates ODR {" 
-              << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
-              "} at ln " << Sym.lineno << endl;
-            cout << "  Previously defined at ln" << 
-              (*search).lineno << endl;
-            exit(0);
+            cout << "Type mismatch detected: ";
+            idx--;
+            ERR(*n->children[0]);
           }
-          else
-            Parser->SymbolTable->insert(Sym);
 
+          RET(new Node(STMT, 3, n, assign, e));
+        }
+      } else ERR(EXP);
+    }
+  }
+  else if ((n = lexMatch(IDEN)))
+  {
+    if((assign = lexExpect(ASSIGN)))
+    {
+      if((e = exp()))
+      {
+        // Type Check
+        Parser::SymTabEnt Sym(curFunc(), /*Type*/nullptr,
+          n, 0); // operator== only checks FUNC, IDEN
+        if (auto search = Parser->SymbolTable->find(Sym);
+            search != Parser->SymbolTable->end())
+        {
+          auto Type = (*search).Type;
+          if (Type != TypeOf(e))
+          {
+            cout << "Type mismatch detected: ";
+            ERR(*Type);
+          }
+        }
+        if(lexExpect(SEMICOLON))
+        {
           RET(new Node(STMT, 3, n, assign, e));
         }
       } else ERR(EXP);
@@ -199,6 +238,13 @@ Node *stmt()
       {
         RET(new Node(STMT, 2, n, e));
       }
+    } else ERR(EXP);
+  }
+  else if ((n = call()))
+  {
+    if(lexMatch(SEMICOLON))
+    {
+      RET(new Node(STMT, 1, n));
     } else ERR(EXP);
   }
   RET(NULL);
@@ -246,7 +292,8 @@ Node *func()
           (*search).lineno << endl;
         exit(0);
       }
-      else {
+      else 
+      {
         cout << "FuncTable: inserting "
           << *FnEnt.Decl->children[1] 
           << endl;
@@ -310,7 +357,10 @@ Node *type()
   ENT();
   if(Node *t = lexMatch(TYPE)) { RET(t); } // int, float, char
   if(match(Node(BRACKET, "[")) && match(Node(BRACKET, "]"))) RET(new Node(TYPE, "[]"));
-  if(match(Node(BRACKET, "(")) && match(Node(BRACKET, ")"))) RET(new Node(TYPE, "()"));
+  if(match(Node(BRACKET, "@")) && 
+     match(Node(BRACKET, "[")) && match(Node(BRACKET, "]"))) RET(new Node(TYPE, "@[]"));
+  if(match(Node(BRACKET, "$")) && 
+     match(Node(BRACKET, "[")) && match(Node(BRACKET, "]"))) RET(new Node(TYPE, "$[]"));
   if(match(Node(BRACKET, "{")) && match(Node(BRACKET, "}"))) RET(new Node(TYPE, "{}"));
   RET(NULL);
 }
@@ -451,6 +501,54 @@ Node *exp()
     {
       n = new Node(EXP, children);
       n->str = "ULIST";
+    } else
+      expect(Node(BRACKET, "]"));
+  }
+  else if (match(Node(BRACKET, "@")) && match(Node(BRACKET, "[")))
+  {
+    // unnamed tuple exp = null or comma separated exp's
+    vector<Node*> children;
+    if ((e = exp()))
+    {
+      children.push_back(e);
+      Node *comma = nullptr;
+      Node *e2 = nullptr;
+      do
+      {
+        comma = lexMatch(COMMA);
+        e2 = exp();
+        if (comma && e2)
+          children.push_back(e2);
+      } while (comma && e2);
+    }
+    if (match(Node(BRACKET, "]")))
+    {
+      n = new Node(EXP, children);
+      n->str = "UTUPLE";
+    } else
+      expect(Node(BRACKET, "]"));
+  }
+  else if (match(Node(BRACKET, "$")) && match(Node(BRACKET, "[")))
+  {
+    // unnamed set exp = null or comma separated exp's
+    vector<Node*> children;
+    if ((e = exp()))
+    {
+      children.push_back(e);
+      Node *comma = nullptr;
+      Node *e2 = nullptr;
+      do
+      {
+        comma = lexMatch(COMMA);
+        e2 = exp();
+        if (comma && e2)
+          children.push_back(e2);
+      } while (comma && e2);
+    }
+    if (match(Node(BRACKET, "]")))
+    {
+      n = new Node(EXP, children);
+      n->str = "USET";
     } else
       expect(Node(BRACKET, "]"));
   }

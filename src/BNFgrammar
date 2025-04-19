@@ -8,6 +8,7 @@ stmt: func    |                #things that a statement can be
       while   |
       switch  |
       overload |
+      call ';' |
       decl ';' |
       decl '=' exp ';' |
       iden '=' exp ';' |
@@ -16,7 +17,7 @@ stmt: func    |                #things that a statement can be
       
 func: decl args block                #a function
 type: 'int' | 'float' | 'char' |     #scalar types or containers
-      '[]' | '()' | '{}'             #list, set, dict
+      '[]' | '@[]' | '$[]' | '{}'            #list, tuple, set, dict
 parms: '(' <null>|(decl)(',' decl)* ')'      #args are enclosed in parentheses
 decl: type iden
 block: '{' (stmt)* '}'         #block is just series of statements guarded by scope
@@ -40,8 +41,9 @@ switch: 'switch' '(' exp ')'
 
 call: iden '(' <null>|(exp)(',' exp)* ')'
 exp: '(' exp ')' |       # parenthesis exp
-     'set(' <null>|(exp)(',' exp)* ')' |                   #unnamed set exp
-     '[' <null>|(exp)(',' exp)* ']' |                      #unnamed list exp
+     '[' <null>|(exp)(',' exp)* ']'    |                   #unnamed list exp
+     '@[' <null>|(exp)(',' exp)* ']'   |                   #unnamed tuple exp
+     '$[' <null>|(exp)(',' exp)* ']'   |                   #unnamed set exp
      '{' <null>|(exp ':' exp)(',' (exp ':' exp))* '}' |    #unnamed dict exp
      (call|iden) '.' exp |          #member access
      (call|iden) ('[' exp ']')* |   #multi-dim array
