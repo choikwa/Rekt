@@ -291,10 +291,10 @@ Node *func()
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
         FuncStack.pop();
-        
-                RET(fn);
+        RET(fn);
       } else ERR(BLOCK);
     }
+    FuncStack.pop();
   }
   RET(NULL);
 }
