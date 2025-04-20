@@ -101,7 +101,7 @@ namespace std
     typedef size_t result_type;
     size_t operator()(const Parser::SymTabEnt& x) const
     {
-      return x.Func->id ^ x.Iden->id;
+      return (x.Func->id << 16) ^ x.Iden->id;
     }
   };
   template<>

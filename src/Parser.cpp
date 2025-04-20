@@ -143,6 +143,18 @@ Node *match(Node n)	// Full match unless keyword and advance
   }
   RET(NULL);
 }
+
+void TypeCheck(Node *p, Node *q)
+{
+  if (*TypeOf(p) != *TypeOf(q))
+  {
+    cout << "Type mismatch detected: ";
+    idx--;
+    ERR(*TypeOf(p));
+  }
+}
+
+/////////////////
 Node *program()
 {
   ENT();
@@ -165,24 +177,6 @@ Node *stmt()
   }
   else if((n = decl()))
   {
-    // Add to SymTab, check one definition rule (ODR)
-    Parser::SymTabEnt Sym(curFunc(), n->children[0], 
-      n->children[1], prevNode()->ln);
-    if (auto search = Parser->SymbolTable->find(Sym);
-        search != Parser->SymbolTable->end())
-    {
-      cout << "!!! Error: multiple definition violates ODR {" 
-        << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
-        "} at ln " << Sym.lineno << endl;
-      cout << "  Previously defined at ln" << 
-        (*search).lineno << endl;
-      exit(0);
-    }
-    else
-    {
-      cout << "SymTable: inserting " << *Sym.Type << " " << *Sym.Iden << endl;
-      Parser->SymbolTable->insert(Sym);
-    }
     if(lexMatch(SEMICOLON))
       RET(new Node(STMT, 1, n));
     if((assign = lexExpect(ASSIGN)))
@@ -192,13 +186,7 @@ Node *stmt()
         if(lexExpect(SEMICOLON))
         {
           // Type Check
-          if (*n->children[0] != *TypeOf(e))
-          {
-            cout << "Type mismatch detected: ";
-            idx--;
-            ERR(*n->children[0]);
-          }
-
+          TypeCheck(n->children[0], e);
           RET(new Node(STMT, 3, n, assign, e));
         }
       } else ERR(EXP);
@@ -211,17 +199,14 @@ Node *stmt()
       if((e = exp()))
       {
         // Type Check
+        // todo: is this necessary if IDEN gets new def?
         Parser::SymTabEnt Sym(curFunc(), /*Type*/nullptr,
           n, 0); // operator== only checks FUNC, IDEN
         if (auto search = Parser->SymbolTable->find(Sym);
             search != Parser->SymbolTable->end())
         {
           auto Type = (*search).Type;
-          if (Type != TypeOf(e))
-          {
-            cout << "Type mismatch detected: ";
-            ERR(*Type);
-          }
+          TypeCheck(Type, e);
         }
         if(lexExpect(SEMICOLON))
         {
@@ -276,6 +261,9 @@ Node *func()
   ENT();
   if(Node *n_decl = decl())
   {
+    auto *IncompleteFunc = new Node(FUNC, 1, n_decl);
+    IncompleteFunc->str = n_decl->children[1]->str; //IDEN
+    FuncStack.push(IncompleteFunc);
     if (Node *n_args = parms())
     {
       // Add to FuncTable, check ODR
@@ -299,9 +287,6 @@ Node *func()
           << endl;
         Parser->FuncTable->insert(FnEnt);
       }
-      auto *IncompleteFunc = new Node(FUNC, 2, n_decl, n_args);
-      IncompleteFunc->str = n_decl->children[1]->str; //IDEN
-      FuncStack.push(IncompleteFunc);
       if (Node *n_block = block())
       {
         Node *fn = new Node(FUNC, 3, n_decl, n_args, n_block);
@@ -347,6 +332,25 @@ Node *decl()
   {
     if (Node *iden = lexExpect(IDEN))
     {
+      // Add to SymTab, check one definition rule (ODR)
+      Parser::SymTabEnt Sym(curFunc(), n_type, 
+        iden, prevNode()->ln);
+      if (auto search = Parser->SymbolTable->find(Sym);
+          search != Parser->SymbolTable->end())
+      {
+        cout << "!!! Error: multiple definition violates ODR {" 
+          << *Sym.Func << " " << *Sym.Type << " " << *Sym.Iden << 
+          "} at ln " << Sym.lineno << endl;
+        cout << "  Previously defined at ln" << 
+          (*search).lineno << endl;
+        exit(0);
+      }
+      else
+      {
+        cout << "SymTable: inserting " << *curFunc() << " " << 
+          *Sym.Type << " " << *Sym.Iden << endl;
+        Parser->SymbolTable->insert(Sym);
+      }
       RET(new Node(DECL, 2, n_type, iden));
     }
   }
@@ -597,6 +601,7 @@ Node *exp()
     Node *tmp = r_exp(n);
     if (tmp)
       n = tmp;
+    
     // Fix up operator precedence if there are any seq of binops.
     n = fixUpOpPrec(n);
     RET(n);
@@ -649,6 +654,7 @@ Node *r_exp(Node *n)
     {
       if((e = exp()))
       {
+        TypeCheck(n, e);
         found = true;
         n = new Node(op->id, 2, n, e);
         n->str = op->str;
